@@ -17,6 +17,62 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { team } = useData();
 
+  const [isNotifOpen, setIsNotifOpen] = React.useState(false);
+  const notifRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Generate dynamic notifications based on user's tasks
+  const notifications = React.useMemo(() => {
+    const list: { id: string; text: string; time: string; type: 'warning' | 'info' | 'success' }[] = [];
+    
+    // Task-based notifications
+    const myTasks = team.filter(t => t.assignee?.id === user.id);
+    myTasks.forEach(t => {
+      if (t.status === 'delayed') {
+        list.push({
+          id: `del-${t.id}`,
+          text: `Tarefa atrasada: "${t.title}"`,
+          time: 'Atrasado',
+          type: 'warning'
+        });
+      } else if (t.status === 'in-progress' && t.dueDate) {
+        const today = new Date();
+        const due = new Date(t.dueDate);
+        const diffTime = due.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 2) {
+          list.push({
+            id: `due-${t.id}`,
+            text: `Prazo próximo (${diffDays} dias): "${t.title}"`,
+            time: 'Prazo próximo',
+            type: 'info'
+          });
+        }
+      }
+    });
+
+    // Default welcome notification if empty
+    if (list.length === 0) {
+      list.push({
+        id: 'welcome',
+        text: `Bem-vindo de volta, ${user.name}! Nenhuma pendência urgente no momento.`,
+        time: 'Agora',
+        type: 'success'
+      });
+    }
+
+    return list;
+  }, [team, user]);
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tasks', label: 'Tarefas', icon: ListTodo },
@@ -89,10 +145,43 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
             >
               {theme === 'dark' ? <Sun size={20} className="text-amber-400 rotate-0 transition-transform duration-500" /> : <Moon size={20} className="text-slate-700 -rotate-12 transition-transform duration-500" />}
             </button>
-            <button className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface-container-lowest"></span>
-            </button>
+            <div ref={notifRef} className="relative">
+              <button 
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-all relative cursor-pointer"
+                title="Notificações"
+              >
+                <Bell size={20} />
+                {notifications.some(n => n.id !== 'welcome') && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface-container-lowest animate-pulse"></span>
+                )}
+              </button>
+
+              {isNotifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-surface-container-high dark:border-slate-800 p-4 z-50 text-left animate-fade-in">
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-surface-container-high dark:border-slate-800">
+                    <h3 className="font-black text-xs uppercase tracking-wider text-primary">Notificações</h3>
+                    <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                      {notifications.length} Alertas
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                    {notifications.map(n => (
+                      <div key={n.id} className="p-3 rounded-2xl bg-surface-container-low/50 dark:bg-slate-800/40 border border-transparent hover:border-primary/10 transition-all flex gap-3 items-start">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full mt-1.5 flex-shrink-0",
+                          n.type === 'warning' ? 'bg-error' : n.type === 'info' ? 'bg-blue-500' : 'bg-emerald-500'
+                        )} />
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold leading-snug text-slate-850 dark:text-slate-200">{n.text}</p>
+                          <span className="text-[9px] text-on-surface-variant/60 font-medium block">{n.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => onViewChange('settings')}
               className={cn(

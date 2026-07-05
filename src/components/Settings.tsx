@@ -37,6 +37,19 @@ export function Settings() {
   const [avatarZoom, setAvatarZoom] = React.useState<number>((USER_ME as any).avatarZoom || 100);
   const [password, setPassword] = React.useState(USER_ME.password || '');
 
+  const [emailNotif, setEmailNotif] = React.useState(() => {
+    const saved = localStorage.getItem(`notif_email_${USER_ME.id}`);
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [pushNotif, setPushNotif] = React.useState(() => {
+    const saved = localStorage.getItem(`notif_push_${USER_ME.id}`);
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [weeklyNotif, setWeeklyNotif] = React.useState(() => {
+    const saved = localStorage.getItem(`notif_weekly_${USER_ME.id}`);
+    return saved !== null ? saved === 'true' : false;
+  });
+
   const [systemTheme, setSystemTheme] = React.useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
@@ -503,9 +516,36 @@ export function Settings() {
     
             <div className="space-y-6">
               {[
-                { title: 'E-mail', desc: 'Receba resumos de atividades importantes em sua caixa de entrada.', icon: Mail, checked: true },
-                { title: 'Push Notifications', desc: 'Alertas em tempo real no navegador ou dispositivo móvel.', icon: BellRing, checked: true },
-                { title: 'Relatórios Semanais', desc: 'Compilado detalhado de performance e métricas de segunda-feira.', icon: BarChart2, checked: false },
+                { 
+                  title: 'E-mail', 
+                  desc: 'Receba resumos de atividades importantes em sua caixa de entrada.', 
+                  icon: Mail, 
+                  checked: emailNotif,
+                  onChange: (val: boolean) => {
+                    setEmailNotif(val);
+                    localStorage.setItem(`notif_email_${USER_ME.id}`, String(val));
+                  }
+                },
+                { 
+                  title: 'Push Notifications', 
+                  desc: 'Alertas em tempo real no navegador ou dispositivo móvel.', 
+                  icon: BellRing, 
+                  checked: pushNotif,
+                  onChange: (val: boolean) => {
+                    setPushNotif(val);
+                    localStorage.setItem(`notif_push_${USER_ME.id}`, String(val));
+                  }
+                },
+                { 
+                  title: 'Relatórios Semanais', 
+                  desc: 'Compilado detalhado de performance e métricas de segunda-feira.', 
+                  icon: BarChart2, 
+                  checked: weeklyNotif,
+                  onChange: (val: boolean) => {
+                    setWeeklyNotif(val);
+                    localStorage.setItem(`notif_weekly_${USER_ME.id}`, String(val));
+                  }
+                },
               ].map((row, i) => (
                 <div key={i} className="flex items-center justify-between p-6 rounded-3xl bg-surface-container-low/30 hover:bg-surface-container-low/50 transition-all border border-white/40 dark:border-slate-800/40 group">
                   <div className="flex gap-6 items-center">
@@ -518,7 +558,12 @@ export function Settings() {
                     </div>
                   </div>
                   <label className="relative inline-flex inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked={row.checked} />
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={row.checked} 
+                      onChange={e => row.onChange(e.target.checked)}
+                    />
                     <div className="w-14 h-8 bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:start-1 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary transition-all"></div>
                   </label>
                 </div>
