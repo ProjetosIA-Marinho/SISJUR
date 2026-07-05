@@ -1,0 +1,8 @@
+{
+  "name": "SISJUR-AFA",
+  "description": "Sistema Jurídico da Academia da Força Aérea - Gestão de tarefas, prazos, SIGAD, documentação e relatórios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
