@@ -1,23 +1,22 @@
 import { Task, User, Project } from './types';
 
+let activeUserInMemory: User | null = null;
+
+export const setActiveUserInMemory = (user: User | null) => {
+  activeUserInMemory = user;
+};
+
 export const getInitialUser = (): User => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('user_me');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // Fallback
-      }
-    }
+  if (activeUserInMemory) {
+    return activeUserInMemory;
   }
   return {
-    id: 'me',
-    name: 'Rodrigo Silva',
-    role: 'Diretor AAJ',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&q=80',
-    online: true,
-    accessLevel: 'gestor',
+    id: 'unknown',
+    name: 'Carregando...',
+    role: '',
+    avatar: 'https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80',
+    online: false,
+    accessLevel: 'operador',
     section: 'AAJ'
   };
 };

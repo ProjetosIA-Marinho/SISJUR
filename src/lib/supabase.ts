@@ -119,7 +119,6 @@ export function mapUserFromDb(row: any): User {
     accessLevel: row.access_level,
     section: row.section,
     username: row.username,
-    password: row.password,
     createdBy: row.created_by
   };
 }
@@ -134,7 +133,6 @@ export function mapUserToDb(user: User): any {
     access_level: user.accessLevel,
     section: user.section,
     username: user.username,
-    password: user.password,
     created_by: user.createdBy
   };
 }

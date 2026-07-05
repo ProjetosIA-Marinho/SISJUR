@@ -82,7 +82,7 @@ export function Reports() {
       return;
     }
 
-    supabase.from('users').update({ online: !member.online }).eq('id', memberId).then(() => {
+    supabase.from('profiles').update({ online: !member.online }).eq('id', memberId).then(() => {
       refreshAll();
     });
   };
@@ -103,63 +103,53 @@ export function Reports() {
     setIsAddUserOpen(true);
   };
 
-  const handleSubmitNewUser = (e: React.FormEvent) => {
+  const handleSubmitNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserRole.trim() || !newUserUsername.trim() || !newUserPassword.trim()) {
       alert('Por favor, preencha todos os campos do formulário.');
       return;
     }
 
-    const savedUsers = localStorage.getItem('registered_users');
-    let usersList = [];
-    if (savedUsers) {
-      try {
-        usersList = JSON.parse(savedUsers);
-      } catch (err) {}
-    } else {
-      usersList = [
-        {
-          username: 'admin',
-          password: 'admin',
-          id: 'me',
-          name: 'Rodrigo Silva',
-          role: 'Diretor AAJ',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&q=80',
-          online: true,
-          accessLevel: 'gestor',
-          section: 'AAJ'
-        }
-      ];
-    }
-
-    // Check username availability
-    const usernameTaken = usersList.some((u: any) => u.username.toLowerCase() === newUserUsername.toLowerCase().trim());
-    if (usernameTaken) {
-      alert('Este Login/Usuário já está em uso.');
+    // Validação de senha: mínimo de 8 caracteres e pelo menos 1 número
+    const passwordRegex = /^(?=.*[0-9]).{8,}$/;
+    if (!passwordRegex.test(newUserPassword)) {
+      alert('A senha deve conter no mínimo 8 caracteres e pelo menos 1 número.');
       return;
     }
 
-    const newUserId = `u-${Date.now()}`;
-    const newUser: User = {
-      id: newUserId,
-      name: newUserName,
-      role: newUserRole,
-      avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
-      online: newUserOnline,
-      accessLevel: newUserAccess,
-      section: newUserSection,
-      username: newUserUsername.toLowerCase().trim(),
-      password: newUserPassword
-    };
+    try {
+      const email = newUserUsername.includes('@') 
+        ? newUserUsername 
+        : `${newUserUsername.toLowerCase().trim()}@sisjur.afa`;
 
-    usersList.push(newUser);
-    localStorage.setItem('registered_users', JSON.stringify(usersList));
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: newUserPassword,
+        options: {
+          data: {
+            name: newUserName,
+            role: newUserRole,
+            access_level: newUserAccess,
+            section: newUserSection,
+            online: newUserOnline,
+            avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
+            username: newUserUsername.toLowerCase().trim(),
+            created_by: USER_ME.id
+          }
+        }
+      });
 
-    const dbUser = mapUserToDb(newUser);
-    supabase.from('users').insert(dbUser).then(() => {
-      refreshAll();
-    });
-    setIsAddUserOpen(false);
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      alert(`Usuário cadastrado com sucesso!`);
+      await refreshAll();
+      setIsAddUserOpen(false);
+    } catch (err: any) {
+      console.error('Erro ao cadastrar usuário via Supabase:', err);
+      alert(`Falha ao cadastrar usuário: ${err.message}`);
+    }
   };
 
   // Filter tabs based on section access

@@ -160,17 +160,21 @@ export function Settings() {
     setEditingUser(null);
   };
 
-  const handleResetPassword = (u: any) => {
-    const updatedUser = {
-      ...u,
-      password: '123456'
-    };
-
-    if (updateUser) {
-      updateUser(updatedUser);
+  const handleResetPassword = async (u: any) => {
+    if (!u.username) {
+      alert("Não é possível solicitar redefinição de senha para militares sem usuário/email cadastrado.");
+      return;
     }
+    const email = u.username.includes('@') ? u.username : `${u.username}@sisjur.afa`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
 
-    alert(`Senha do militar ${u.name} resetada com sucesso para: 123456`);
+    if (error) {
+      alert(`Erro ao solicitar redefinição: ${error.message}`);
+    } else {
+      alert(`Link de redefinição de senha enviado com sucesso para ${email}`);
+    }
   };
 
   // Registered users list from database with default fallback
@@ -217,23 +221,35 @@ export function Settings() {
   ];
 
   const handleSave = async () => {
-    const updatedUser = {
-      ...USER_ME,
-      name,
-      role,
-      accessLevel,
-      section,
-      online,
-      avatar,
-      avatarZoom,
-      password
-    };
+    try {
+      if (password) {
+        const { error: pwdError } = await supabase.auth.updateUser({ password });
+        if (pwdError) {
+          alert("Erro ao atualizar senha no Supabase Auth: " + pwdError.message);
+          return;
+        }
+      }
 
-    if (updateUser) {
-      await updateUser(updatedUser);
+      const updatedUser = {
+        ...USER_ME,
+        name,
+        role,
+        accessLevel,
+        section,
+        online,
+        avatar,
+        avatarZoom
+      };
+
+      if (updateUser) {
+        await updateUser(updatedUser);
+      }
+
+      alert("Perfil atualizado com sucesso!");
+    } catch (e: any) {
+      console.error("Erro ao salvar perfil:", e);
+      alert("Erro ao salvar perfil.");
     }
-
-    window.location.reload();
   };
 
   // Filter displayed users according to section access and createdBy
@@ -396,7 +412,7 @@ export function Settings() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Alterar Senha</label>
                   <input 
-                    type="text" 
+                    type="password" 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Sua nova senha secreta"

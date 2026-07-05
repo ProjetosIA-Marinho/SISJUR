@@ -25,36 +25,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const refreshAll = async () => {
     try {
       setLoading(true);
-      // Fetch Users
+      // Fetch Users from profiles table
       const { data: usersData, error: usersError } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*');
       
       if (usersError) throw usersError;
       const mappedUsers = (usersData || []).map(mapUserFromDb);
 
-      // Merge with localStorage registered_users fallback
-      const saved = localStorage.getItem('registered_users');
-      if (saved) {
-        try {
-          const localUsers = JSON.parse(saved);
-          localUsers.forEach((lu: any) => {
-            const idx = mappedUsers.findIndex(u => u.id === lu.id);
-            if (idx !== -1) {
-              mappedUsers[idx] = { ...mappedUsers[idx], ...lu };
-            } else {
-              mappedUsers.push(lu);
-            }
-          });
-        } catch (e) {}
-      }
-
       setTeam(mappedUsers);
 
-      // Fetch Tasks
+      // Fetch Tasks referencing profiles as users alias
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*, users:assignee_id(*)');
+        .select('*, users:profiles!assignee_id(*)');
       
       if (tasksError) throw tasksError;
       const allTasks = (tasksData || []).map(mapTaskFromDb);
@@ -148,34 +132,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUser = async (user: User) => {
-    // 1. Update in local storage
-    const saved = localStorage.getItem('registered_users');
-    let localUsers = [];
-    if (saved) {
-      try {
-        localUsers = JSON.parse(saved);
-      } catch (e) {}
-    }
-    const index = localUsers.findIndex((u: any) => u.id === user.id);
-    if (index !== -1) {
-      localUsers[index] = user;
-    } else {
-      localUsers.push(user);
-    }
-    localStorage.setItem('registered_users', JSON.stringify(localUsers));
-
-    // 2. Update current logged-in user if it's him
-    const savedMe = localStorage.getItem('user_me');
-    if (savedMe) {
-      try {
-        const me = JSON.parse(savedMe);
-        if (me.id === user.id) {
-          localStorage.setItem('user_me', JSON.stringify(user));
-        }
-      } catch (e) {}
-    }
-
-    // 3. Optimistically update local team state immediately
+    // 1. Optimistically update local team state immediately
     setTeam(prevTeam => {
       const newTeam = [...prevTeam];
       const idx = newTeam.findIndex(u => u.id === user.id);
@@ -187,11 +144,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return newTeam;
     });
 
-    // 4. Update in Supabase in background
+    // 2. Update in Supabase in background (profiles table instead of users)
     try {
       const dbUser = mapUserToDb(user);
       supabase
-        .from('users')
+        .from('profiles')
         .update(dbUser)
         .eq('id', user.id)
         .then(({ error }) => {

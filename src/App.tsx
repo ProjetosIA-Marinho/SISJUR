@@ -1,6 +1,5 @@
 import React from 'react';
 import { ViewType } from './types';
-import { USER_ME } from './data';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
 import { KanbanBoard } from './components/KanbanBoard';
@@ -11,6 +10,8 @@ import { Reports } from './components/Reports';
 import { Settings } from './components/Settings';
 import { AnimatePresence, motion } from 'motion/react';
 import { Login } from './components/Login';
+import { supabase, mapUserFromDb } from './lib/supabase';
+import { setActiveUserInMemory } from './data';
 
 export default function App() {
   const [currentView, setCurrentView] = React.useState<ViewType>('dashboard');
@@ -23,24 +24,49 @@ export default function App() {
     return 'light';
   });
 
-  const [isAuthenticated, setIsAuthenticated] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('is_authenticated') === 'true';
-    }
-    return false;
-  });
+  const [loadingSession, setLoadingSession] = React.useState(true);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [activeUser, setActiveUser] = React.useState<any>(null);
 
-  const [activeUser, setActiveUser] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('user_me');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
+  const updateActiveUser = (user: any) => {
+    setActiveUser(user);
+    setActiveUserInMemory(user);
+  };
+
+  React.useEffect(() => {
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          if (data) {
+            updateActiveUser(mapUserFromDb(data));
+            setIsAuthenticated(true);
+          }
+          setLoadingSession(false);
+        });
+      } else {
+        setLoadingSession(false);
       }
-    }
-    return USER_ME;
-  });
+    });
+
+    // 2. Setup auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (data) {
+          updateActiveUser(mapUserFromDb(data));
+          setIsAuthenticated(true);
+        }
+      } else {
+        updateActiveUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   React.useEffect(() => {
     const root = window.document.documentElement;
@@ -69,13 +95,20 @@ export default function App() {
     }
   };
 
+  if (loadingSession) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 text-slate-400 font-black text-xs tracking-widest uppercase">
+        Carregando Sessão...
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <Login 
         onLoginSuccess={(user) => {
-          setActiveUser(user);
+          updateActiveUser(user);
           setIsAuthenticated(true);
-          window.location.reload();
         }}
         theme={theme}
       />

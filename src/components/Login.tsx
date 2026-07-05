@@ -16,69 +16,41 @@ export function Login({ onLoginSuccess, theme }: LoginProps) {
   const [loginPassword, setLoginPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
-  // Load registered users list from local storage or set default admin
-  const getRegisteredUsers = (): any[] => {
-    const saved = localStorage.getItem('registered_users');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    // Default account
-    return [
-      {
-        username: 'admin',
-        password: 'admin',
-        id: 'me',
-        name: 'Rodrigo Silva',
-        role: 'Diretor AAJ',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&q=80',
-        online: true,
-        accessLevel: 'gestor',
-        section: 'AAJ'
-      }
-    ];
-  };
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', loginUsername.toLowerCase().trim())
-        .eq('password', loginPassword);
+      const email = loginUsername.includes('@') 
+        ? loginUsername 
+        : `${loginUsername.toLowerCase().trim()}@sisjur.afa`;
 
-      if (error) {
-        throw error;
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: loginPassword,
+      });
+
+      if (authError) {
+        throw authError;
       }
 
-      if (data && data.length > 0) {
-        const matchedUser = mapUserFromDb(data[0]);
-        // Save authenticated user
-        localStorage.setItem('user_me', JSON.stringify(matchedUser));
-        localStorage.setItem('is_authenticated', 'true');
+      if (authData?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        const matchedUser = mapUserFromDb(profileData);
         onLoginSuccess(matchedUser);
         return;
       }
-    } catch (err) {
-      console.warn('Falha na autenticação via Supabase, recorrendo a credenciais locais:', err);
-    }
-
-    // Fallback to local storage credentials
-    const users = getRegisteredUsers();
-    const matchedUser = users.find(
-      u => u.username.toLowerCase() === loginUsername.toLowerCase().trim() && u.password === loginPassword
-    );
-
-    if (matchedUser) {
-      // Save authenticated user
-      localStorage.setItem('user_me', JSON.stringify(matchedUser));
-      localStorage.setItem('is_authenticated', 'true');
-      onLoginSuccess(matchedUser);
-    } else {
-      alert('Usuário ou senha incorretos.');
+    } catch (err: any) {
+      console.error('Falha na autenticação via Supabase:', err);
+      alert('Usuário ou senha incorretos ou erro de conexão.');
     }
   };
 
@@ -117,7 +89,7 @@ export function Login({ onLoginSuccess, theme }: LoginProps) {
                 required
                 value={loginUsername}
                 onChange={e => setLoginUsername(e.target.value)}
-                placeholder="Seu usuário (Ex: admin)"
+                placeholder="Seu usuário ou email"
                 className="w-full pl-12 pr-6 py-4 bg-surface-container dark:bg-slate-800/60 border-none rounded-[1.5rem] text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/30 font-bold"
               />
             </div>
@@ -153,10 +125,6 @@ export function Login({ onLoginSuccess, theme }: LoginProps) {
             <span>Entrar no Sistema</span>
             <ChevronRight size={16} />
           </button>
-          
-          <p className="text-[10px] text-center text-on-surface-variant/40 mt-4 font-bold uppercase tracking-wider">
-            Acesso padrão: admin / admin
-          </p>
         </form>
       </motion.div>
     </div>
