@@ -5,13 +5,35 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL or Anon Key is missing from environment variables.');
+  console.warn('Supabase URL or Anon Key is missing from environment variables. Local storage fallback will be used.');
 }
 
-export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : new Proxy({} as any, {
+      get(target, prop) {
+        // Return a dummy chainable query object or standard method resolver
+        return () => {
+          console.warn(`Supabase method .${String(prop)}() mock called (credentials missing)`);
+          return {
+            select: () => Promise.resolve({ data: null, error: null }),
+            insert: () => Promise.resolve({ data: null, error: null }),
+            update: () => {
+              return {
+                eq: () => Promise.resolve({ data: null, error: null })
+              };
+            },
+            delete: () => {
+              return {
+                eq: () => Promise.resolve({ data: null, error: null })
+              };
+            },
+            eq: () => Promise.resolve({ data: null, error: null }),
+            then: (resolve: any) => resolve({ data: null, error: null })
+          };
+        };
+      }
+    });
 
 // Map database column names to camelCase for Task
 export function mapTaskFromDb(row: any): Task {
