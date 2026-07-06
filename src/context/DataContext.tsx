@@ -313,11 +313,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activeTeam = React.useMemo(() => {
+    let updatedTeam = [...team];
+
+    // Ensure the current user is included in the team list so they show up as online
+    const hasMe = updatedTeam.some(member => member.id === USER_ME.id);
+    if (USER_ME.id && USER_ME.id !== 'unknown' && !hasMe) {
+      updatedTeam.push(USER_ME);
+    }
+
     const isSupabaseEnabled = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
     if (!isSupabaseEnabled) {
-      return team;
+      return updatedTeam;
     }
-    return team.map(member => {
+
+    return updatedTeam.map(member => {
       const isMe = member.id === USER_ME.id;
       const isOnline = onlineUsers.includes(member.id) || isMe;
       return {
@@ -325,7 +334,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         online: isOnline
       };
     });
-  }, [team, onlineUsers, USER_ME.id]);
+  }, [team, onlineUsers, USER_ME.id, USER_ME]);
 
   return (
     <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
