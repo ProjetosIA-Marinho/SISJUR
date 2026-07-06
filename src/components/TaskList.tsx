@@ -16,7 +16,9 @@ export function TaskList() {
   const [tasks, setLocalTasks] = React.useState<Task[]>([]);
 
   React.useEffect(() => {
-    setLocalTasks(dbTasks);
+    if (dbTasks) {
+      setLocalTasks(dbTasks.filter(t => t.documentType !== 'holiday' && t.documentType !== 'routine'));
+    }
   }, [dbTasks]);
 
   const setTasks = async (updater: Task[] | ((prev: Task[]) => Task[])) => {

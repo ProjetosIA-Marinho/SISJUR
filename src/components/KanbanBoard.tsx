@@ -68,7 +68,7 @@ export function KanbanBoard() {
             </div>
 
             <div className="flex-grow flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
-              {tasks.filter(t => t.status === column.id).map((task, index) => (
+              {tasks.filter(t => t.status === column.id && t.documentType !== 'holiday' && t.documentType !== 'routine').map((task, index) => (
                 <motion.div
                   key={task.id}
                   layoutId={task.id}

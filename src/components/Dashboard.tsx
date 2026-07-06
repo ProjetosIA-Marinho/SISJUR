@@ -31,6 +31,7 @@ export function Dashboard() {
 
   // Filter tasks based on selected year and section access
   const filteredTasks = TASKS.filter(task => {
+    if (task.documentType === 'holiday' || task.documentType === 'routine') return false;
     if (USER_ME.accessLevel !== 'gestor') {
       const taskSector = getSector(task);
       if (taskSector !== USER_ME.section) return false;

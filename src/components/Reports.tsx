@@ -331,7 +331,7 @@ export function Reports() {
 
           return true;
         }).map((member) => {
-          const memberTasks = TASKS.filter(t => t.assignee?.id === member.id);
+          const memberTasks = TASKS.filter(t => t.assignee?.id === member.id && t.documentType !== 'holiday' && t.documentType !== 'routine');
           const total = memberTasks.length;
           const completed = memberTasks.filter(t => t.status === 'completed').length;
           const inProgress = memberTasks.filter(t => t.status === 'in-progress').length;
