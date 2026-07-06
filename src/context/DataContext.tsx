@@ -41,6 +41,68 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [team, setTeam] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)) {
+      return;
+    }
+
+    let channel: any = null;
+
+    // Helper to start tracking presence
+    const setupPresence = (userId: string) => {
+      if (channel) return;
+      channel = supabase.channel('online-users', {
+        config: {
+          presence: {
+            key: userId,
+          },
+        },
+      });
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          const onlineIds = Object.keys(state);
+          setOnlineUsers(onlineIds);
+        })
+        .subscribe(async (status: string) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track({
+              online_at: new Date().toISOString(),
+            });
+          }
+        });
+    };
+
+    // Get current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setupPresence(session.user.id);
+      }
+    });
+
+    // Listen for auth changes to update presence tracking
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setupPresence(session.user.id);
+      } else {
+        if (channel) {
+          channel.unsubscribe();
+          channel = null;
+        }
+        setOnlineUsers([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, []);
 
   const refreshAll = async () => {
     setLoading(true);
@@ -242,8 +304,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
+  const activeTeam = React.useMemo(() => {
+    const isSupabaseEnabled = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+    if (!isSupabaseEnabled) {
+      return team;
+    }
+    return team.map(member => ({
+      ...member,
+      online: onlineUsers.includes(member.id)
+    }));
+  }, [team, onlineUsers]);
+
   return (
-    <DataContext.Provider value={{ tasks, team, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
+    <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
       {children}
     </DataContext.Provider>
   );
