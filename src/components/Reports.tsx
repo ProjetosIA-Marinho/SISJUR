@@ -6,7 +6,7 @@ import { USER_ME } from '../data';
 import { User, Task } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 import { useData } from '../context/DataContext';
-import { supabase, mapUserToDb } from '../lib/supabase';
+import { supabase, mapUserToDb, signUpNewUser } from '../lib/supabase';
 
 export function Reports() {
   const [activeTab, setActiveTab] = React.useState<'aaj' | 'sij' | 'ajur'>(() => {
@@ -128,22 +128,20 @@ export function Reports() {
 
       if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
         try {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          const { data: signUpData, error: signUpError } = await signUpNewUser(
             email,
-            password: newUserPassword,
-            options: {
-              data: {
-                name: newUserName,
-                role: newUserRole,
-                access_level: newUserAccess,
-                section: newUserSection,
-                online: newUserOnline,
-                avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
-                username: newUserUsername.toLowerCase().trim(),
-                created_by: USER_ME.id
-              }
+            newUserPassword,
+            {
+              name: newUserName,
+              role: newUserRole,
+              access_level: newUserAccess,
+              section: newUserSection,
+              online: newUserOnline,
+              avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
+              username: newUserUsername.toLowerCase().trim(),
+              created_by: USER_ME.id
             }
-          });
+          );
 
           if (signUpError) {
             console.warn('Supabase signUp error, using local storage fallback:', signUpError);

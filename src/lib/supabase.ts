@@ -150,3 +150,26 @@ export function mapUserToDb(user: User): any {
   };
 }
 
+export async function signUpNewUser(email: string, password: string, userData: any) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { data: null, error: new Error('Supabase credentials missing') };
+  }
+  
+  // Create a temporary client with no persistence to prevent logging out the current admin/operator
+  const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+
+  return tempClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: userData
+    }
+  });
+}
+
+
