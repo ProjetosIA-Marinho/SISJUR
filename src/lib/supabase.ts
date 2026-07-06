@@ -9,9 +9,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = (supabaseUrl && supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        persistSession: true
+      }
+    })
   : new Proxy({} as any, {
       get(target, prop) {
+        if (prop === 'auth') {
+          return {
+            getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+            onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+            signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
+            signOut: () => Promise.resolve({ error: null })
+          };
+        }
         // Return a dummy chainable query object or standard method resolver
         return () => {
           console.warn(`Supabase method .${String(prop)}() mock called (credentials missing)`);
