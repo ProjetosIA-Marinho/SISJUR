@@ -4,6 +4,7 @@ import { ViewType, User } from '../types';
 import { cn } from '../lib/utils';
 import { useData } from '../context/DataContext';
 import logoImage from '../login_logo.png';
+import { supabase } from '../lib/supabase';
 
 interface NavigationProps {
   currentView: ViewType;
@@ -192,9 +193,14 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
               <Settings size={20} />
             </button>
             <button 
-              onClick={() => {
+              onClick={async () => {
                 localStorage.removeItem('is_authenticated');
                 localStorage.removeItem('user_me');
+                try {
+                  await supabase.auth.signOut();
+                } catch (e) {
+                  console.error('Error signing out:', e);
+                }
                 window.location.href = window.location.origin + window.location.pathname;
               }}
               className="p-2 text-on-surface-variant hover:bg-surface-container hover:text-error rounded-full transition-colors cursor-pointer"
