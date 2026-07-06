@@ -125,9 +125,9 @@ export function TaskList() {
         'Status': 'Em Andamento',
         'Prioridade': 'Alta',
         'Responsável': 'Ten. Cel. Silva',
-        'Data Entrada': '2026-07-01',
-        'Prazo': '2026-07-10',
-        'Término': '2026-07-12',
+        'Data Entrada': '01/07/2026',
+        'Prazo': '10/07/2026',
+        'Término': '12/07/2026',
         'SIGAD Entrada': 'SIGAD-12345-2026',
         'SIGAD Saída': 'SIGAD-12347-2026',
         'Destino': 'SIJ',
@@ -140,8 +140,8 @@ export function TaskList() {
         'Status': 'Não Iniciada',
         'Prioridade': 'Média',
         'Responsável': 'Cap. Oliveira',
-        'Data Entrada': '2026-07-02',
-        'Prazo': '2026-07-15',
+        'Data Entrada': '02/07/2026',
+        'Prazo': '15/07/2026',
         'Término': '',
         'SIGAD Entrada': 'SIGAD-98765-2026',
         'SIGAD Saída': '',
@@ -161,8 +161,8 @@ export function TaskList() {
   const downloadCsvTemplate = () => {
     const headers = [
       ['Título', 'Status', 'Prioridade', 'Responsável', 'Data Entrada', 'Prazo', 'Término', 'SIGAD Entrada', 'SIGAD Saída', 'Destino', 'Tipo', 'Ano', 'Observações'],
-      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '2026-07-01', '2026-07-10', '2026-07-12', 'SIGAD-12345-2026', 'SIGAD-12347-2026', 'SIJ', 'Estudo', '2026', 'Análise preliminar das demandas'],
-      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '2026-07-02', '2026-07-15', '', 'SIGAD-98765-2026', '', 'AJUR', 'Portaria', '2026', 'Verificar conformidade com a nova legislação']
+      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '01/07/2026', '10/07/2026', '12/07/2026', 'SIGAD-12345-2026', 'SIGAD-12347-2026', 'SIJ', 'Estudo', '2026', 'Análise preliminar das demandas'],
+      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '02/07/2026', '15/07/2026', '', 'SIGAD-98765-2026', '', 'AJUR', 'Portaria', '2026', 'Verificar conformidade com a nova legislação']
     ];
 
     const csvContent = headers.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -197,6 +197,18 @@ export function TaskList() {
           return undefined;
         };
 
+        const parseDate = (val: string): string => {
+          if (!val) return '';
+          const dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+          if (dmyMatch) {
+            const day = dmyMatch[1].padStart(2, '0');
+            const month = dmyMatch[2].padStart(2, '0');
+            const year = dmyMatch[3];
+            return `${year}-${month}-${day}`;
+          }
+          return val;
+        };
+
         const importedTasks: Task[] = data.map((row: any, index: number) => {
           const title = String(getField(row, ['title', 'titulo', 'título', 'tarefa', 'assunto', 'subject', 'nome']) || `Tarefa Importada ${index + 1}`).trim();
           
@@ -214,11 +226,32 @@ export function TaskList() {
           else if (prioVal.includes('urg') || prioVal === 'urgent') priority = 'urgent';
 
           const assigneeName = String(getField(row, ['assignee', 'responsavel', 'responsável', 'agente']) || '').trim();
-          const matchedAssignee = TEAM.find(member => member.name.toLowerCase().includes(assigneeName.toLowerCase())) || USER_ME;
+          let matchedAssignee = TEAM.find(member => member.name.toLowerCase().includes(assigneeName.toLowerCase()));
+          
+          if (!matchedAssignee && assigneeName) {
+            matchedAssignee = {
+              id: `u-temp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              name: assigneeName,
+              role: 'Militar Importado',
+              avatar: 'https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80',
+              accessLevel: 'operador',
+              section: 'AAJ'
+            };
+          } else if (!matchedAssignee) {
+            matchedAssignee = USER_ME;
+          }
 
-          const entryDate = String(getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']) || new Date().toISOString().split('T')[0]).trim();
-          const dueDate = String(getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']) || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0]).trim();
-          const expeditedDate = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']) ? String(getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término'])).trim() : undefined;
+          const entryDateRaw = String(getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']) || '').trim();
+          const entryDate = entryDateRaw ? parseDate(entryDateRaw) : new Date().toISOString().split('T')[0];
+
+          const dueDateRaw = String(getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']) || '').trim();
+          const dueDate = dueDateRaw ? parseDate(dueDateRaw) : new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0];
+
+          const expeditedDateRaw = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']) 
+            ? String(getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término'])).trim() 
+            : '';
+          const expeditedDate = expeditedDateRaw ? parseDate(expeditedDateRaw) : undefined;
+
           const sigadOfRec = getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec']) ? String(getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec'])).trim() : undefined;
           const sigadOfExp = getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp']) ? String(getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp'])).trim() : undefined;
           const origem = getField(row, ['origem', 'orgao de origem', 'órgão de origem']) ? String(getField(row, ['origem', 'orgao de origem', 'órgão de origem'])).trim() : undefined;
