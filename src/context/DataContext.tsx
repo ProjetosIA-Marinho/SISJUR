@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, mapTaskFromDb, mapTaskToDb, mapUserFromDb, mapUserToDb } from '../lib/supabase';
 import { Task, User, Project } from '../types';
-import { TEAM as mockTeam, TASKS as mockTasks, PROJECTS as mockProjects } from '../data';
+import { TEAM as mockTeam, TASKS as mockTasks, PROJECTS as mockProjects, USER_ME } from '../data';
 
 interface DataContextType {
   tasks: Task[];
@@ -317,11 +317,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (!isSupabaseEnabled) {
       return team;
     }
-    return team.map(member => ({
-      ...member,
-      online: onlineUsers.includes(member.id)
-    }));
-  }, [team, onlineUsers]);
+    return team.map(member => {
+      const isMe = member.id === USER_ME.id;
+      const isOnline = onlineUsers.includes(member.id) || isMe;
+      return {
+        ...member,
+        online: isOnline
+      };
+    });
+  }, [team, onlineUsers, USER_ME.id]);
 
   return (
     <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>

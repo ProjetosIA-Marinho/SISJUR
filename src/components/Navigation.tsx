@@ -124,7 +124,10 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
             {team.filter(m => m.online).slice(0, 4).map(m => (
               <div key={m.id} className="relative group cursor-pointer" title={`${m.name} está online`}>
                 <img 
-                  src={m.avatar} 
+                  src={m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`} 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`;
+                  }}
                   alt={m.name} 
                   className="w-7 h-7 rounded-full border-2 border-surface-container-lowest dark:border-slate-900 object-cover hover:scale-110 hover:z-10 transition-all shadow-sm"
                 />
@@ -218,7 +221,10 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
           >
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-surface-container-high group-hover:border-secondary transition-all flex items-center justify-center">
               <img 
-                src={user.avatar} 
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+                }}
                 alt={user.name} 
                 style={{ transform: `scale(${(user as any).avatarZoom ? (user as any).avatarZoom / 100 : 1})` }}
                 className="w-full h-full object-cover transition-transform"
