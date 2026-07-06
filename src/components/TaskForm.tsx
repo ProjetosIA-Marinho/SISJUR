@@ -53,6 +53,42 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
   ];
 
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [docTypes, setDocTypes] = React.useState<{value: string, label: string}[]>(() => {
+    const saved = localStorage.getItem('sisjur_doc_types');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { value: 'Ofício', label: 'Ofício' },
+      { value: 'Estudo', label: 'Estudo' },
+      { value: 'E-mail', label: 'E-mail' },
+      { value: 'Portaria', label: 'Portaria' },
+      { value: 'IPM', label: 'IPM' },
+      { value: 'APF', label: 'APF' },
+      { value: 'Sindicância', label: 'Sindicância' },
+      { value: 'Demanda Judicial', label: 'Demanda Judicial' },
+      { value: 'Armamento', label: 'Armamento' },
+      { value: 'Outros', label: 'Outros' },
+    ];
+  });
+
+  const handleAddNewDocType = () => {
+    const newType = prompt('Digite o nome do novo tipo de documento:');
+    if (newType && newType.trim()) {
+      const trimmed = newType.trim();
+      const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+      if (!docTypes.some(d => d.value.toLowerCase() === formatted.toLowerCase())) {
+        const updated = [...docTypes, { value: formatted, label: formatted }];
+        setDocTypes(updated);
+        localStorage.setItem('sisjur_doc_types', JSON.stringify(updated));
+      } else {
+        alert('Este tipo de documento já existe.');
+      }
+    }
+  };
+
   const [formData, setFormData] = React.useState<Partial<Task>>({
     title: '',
     status: 'not-started',
@@ -205,13 +241,25 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end !overflow-visible relative z-30">
-            <CustomSelect
-              label="Tipo de Documento"
-              value={formData.documentType || 'Ofício'}
-              options={documentTypeOptions}
-              onChange={val => setFormData({ ...formData, documentType: val })}
-              variant="modal"
-            />
+            <div className="flex gap-2 items-end !overflow-visible">
+              <div className="flex-grow !overflow-visible">
+                <CustomSelect
+                  label="Tipo de Documento"
+                  value={formData.documentType || 'Ofício'}
+                  options={docTypes}
+                  onChange={val => setFormData({ ...formData, documentType: val })}
+                  variant="modal"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddNewDocType}
+                className="mb-1 p-3.5 bg-surface-container-high dark:bg-slate-800 hover:bg-primary hover:text-white rounded-2xl transition-all cursor-pointer flex-shrink-0"
+                title="Adicionar Novo Tipo de Documento"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Data da Entrada</label>
               <input 
@@ -366,7 +414,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
               <CustomSelect
                 label="Tipo de Documento"
                 value={subtaskForm.documentType || 'Ofício'}
-                options={documentTypeOptions}
+                options={docTypes}
                 onChange={val => setSubtaskForm({ ...subtaskForm, documentType: val })}
                 className="py-1"
                 variant="modal"
