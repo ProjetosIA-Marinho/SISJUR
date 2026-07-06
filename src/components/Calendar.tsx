@@ -4,6 +4,7 @@ import { USER_ME } from '../data';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../context/DataContext';
+import { Task, TaskPriority } from '../types';
 
 const monthNames = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -20,7 +21,7 @@ interface CalendarEvent {
 }
 
 export function Calendar() {
-  const { tasks: TASKS, team: TEAM } = useData();
+  const { tasks: TASKS, team: TEAM, addTask, updateTask, deleteTask } = useData();
   
   // Start the calendar in July 2026 since most mock tasks are dated for July 2026
   const [currentDate, setCurrentDate] = React.useState(new Date(2026, 6, 1));
@@ -29,6 +30,7 @@ export function Calendar() {
 
   // Calendar Event States
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
+  const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
 
   React.useEffect(() => {
     if (TEAM && TEAM.length > 0) {
@@ -48,7 +50,7 @@ export function Calendar() {
         title: t.title,
         dueDate: t.dueDate || '',
         assigneeId: t.assignee?.id || null,
-        type: 'task',
+        type: (t.documentType === 'holiday' || t.documentType === 'routine') ? (t.documentType as 'holiday' | 'routine') : 'task',
         priority: t.priority
       })));
     }
@@ -175,6 +177,7 @@ export function Calendar() {
 
   // Open modal pre-filling date
   const openCreateModal = (dateObj?: Date) => {
+    setEditingEvent(null);
     if (dateObj) {
       setNewDateStr(formatDateString(dateObj));
     } else {
@@ -186,22 +189,86 @@ export function Calendar() {
     setIsModalOpen(true);
   };
 
-  // Save new event to state
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const openEditModal = (event: CalendarEvent) => {
+    setEditingEvent(event);
+    setNewTitle(event.title);
+    setNewType(event.type);
+    setNewPriority(event.priority || 'medium');
+    setNewAssigneeId(event.assigneeId || '');
+    setNewDateStr(event.dueDate);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!editingEvent) return;
+    try {
+      await deleteTask(editingEvent.id);
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+    }
+    setIsModalOpen(false);
+    setEditingEvent(null);
+  };
+
+  // Save new event or edit existing to state
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDateStr) return;
 
-    const newEvent: CalendarEvent = {
-      id: `ev-${Date.now()}`,
-      title: newTitle,
-      dueDate: newDateStr,
-      type: newType,
-      assigneeId: newType === 'holiday' ? null : newAssigneeId,
-      priority: newType === 'task' ? newPriority : undefined
-    };
+    const assigneeUser = TEAM.find(m => m.id === newAssigneeId) || TEAM[0];
 
-    setCalendarEvents(prev => [...prev, newEvent]);
+    if (editingEvent) {
+      const existingTask = TASKS.find(t => t.id === editingEvent.id);
+      const updatedTask: Task = {
+        id: editingEvent.id,
+        title: newTitle,
+        description: existingTask?.description || '',
+        status: existingTask?.status || 'not-started',
+        priority: newType === 'task' ? (newPriority as TaskPriority) : 'medium',
+        dueDate: newDateStr,
+        assignee: newType === 'holiday' ? { id: 'holiday-system', name: 'Sistema', role: '', avatar: '', accessLevel: 'operador', section: 'AAJ' } : assigneeUser,
+        progress: existingTask?.progress || 0,
+        documentType: newType,
+        sigadOfRec: existingTask?.sigadOfRec,
+        origem: existingTask?.origem,
+        sigadOfExp: existingTask?.sigadOfExp,
+        destination: existingTask?.destination,
+        entryDate: existingTask?.entryDate,
+        expeditedDate: existingTask?.expeditedDate,
+        observations: existingTask?.observations,
+        year: existingTask?.year,
+        tags: existingTask?.tags,
+        parentId: existingTask?.parentId,
+        isTemplate: existingTask?.isTemplate,
+        recurringPattern: existingTask?.recurringPattern
+      };
+
+      try {
+        await updateTask(updatedTask);
+      } catch (err) {
+        console.error('Failed to update task:', err);
+      }
+    } else {
+      const newEvent: Task = {
+        id: `task-${Date.now()}`,
+        title: newTitle,
+        description: '',
+        status: 'not-started',
+        priority: newType === 'task' ? (newPriority as TaskPriority) : 'medium',
+        dueDate: newDateStr,
+        assignee: newType === 'holiday' ? { id: 'holiday-system', name: 'Sistema', role: '', avatar: '', accessLevel: 'operador', section: 'AAJ' } : assigneeUser,
+        progress: 0,
+        documentType: newType
+      };
+
+      try {
+        await addTask(newEvent);
+      } catch (err) {
+        console.error('Failed to add task:', err);
+      }
+    }
     setIsModalOpen(false);
+    setEditingEvent(null);
   };
 
   // Count active tasks/events visible in selected filters
@@ -375,12 +442,16 @@ export function Calendar() {
                       {day.tasks.map((task) => (
                         <div
                           key={task.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(task);
+                          }}
                           className={cn(
                             "px-2.5 py-1.5 rounded-xl text-[9px] font-black border-l-4 truncate shadow-sm cursor-pointer hover:translate-x-0.5 transition-all flex flex-col gap-0.5",
                             task.type === 'holiday' 
-                              ? "bg-purple-500/10 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-500"
-                              : task.type === 'routine'
                               ? "bg-blue-500/10 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-500"
+                              : task.type === 'routine'
+                              ? "bg-indigo-500/10 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-500"
                               : task.priority === 'urgent' || task.priority === 'high'
                               ? "bg-red-500/10 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-600 dark:border-red-500"
                               : task.priority === 'medium'
@@ -447,12 +518,16 @@ export function Calendar() {
                       {day.tasks.map((task) => (
                         <div
                           key={task.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(task);
+                          }}
                           className={cn(
                             "px-3 py-2 rounded-2xl text-[10px] font-black border-l-4 shadow-sm cursor-pointer hover:translate-x-1 transition-all flex flex-col gap-1",
                             task.type === 'holiday' 
-                              ? "bg-purple-500/10 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-500"
-                              : task.type === 'routine'
                               ? "bg-blue-500/10 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-500"
+                              : task.type === 'routine'
+                              ? "bg-indigo-500/10 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-500"
                               : task.priority === 'urgent' || task.priority === 'high'
                               ? "bg-red-500/10 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-600 dark:border-red-500"
                               : task.priority === 'medium'
@@ -540,7 +615,9 @@ export function Calendar() {
               className="bg-white dark:bg-slate-900 border border-surface-container-high dark:border-slate-800 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl text-left"
             >
               <div className="flex justify-between items-center mb-6 pb-2 border-b border-surface-container-high dark:border-slate-800">
-                <h3 className="font-black text-base uppercase tracking-wider text-primary">Novo Evento</h3>
+                <h3 className="font-black text-base uppercase tracking-wider text-primary">
+                  {editingEvent ? 'Editar Evento' : 'Novo Evento'}
+                </h3>
                 <button 
                   onClick={() => setIsModalOpen(false)}
                   className="p-1 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors cursor-pointer"
@@ -580,7 +657,7 @@ export function Calendar() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">Título do Evento</label>
                   <input
-                    type="text"
+                     type="text"
                     required
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value)}
@@ -652,6 +729,15 @@ export function Calendar() {
 
                 {/* Action buttons */}
                 <div className="pt-4 flex gap-3">
+                  {editingEvent && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteEvent}
+                      className="flex-1 py-3 bg-red-600 text-white font-bold text-xs rounded-2xl hover:bg-red-700 transition-all cursor-pointer text-center shadow-lg shadow-red-600/10"
+                    >
+                      Excluir
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
@@ -663,7 +749,7 @@ export function Calendar() {
                     type="submit"
                     className="flex-1 py-3 bg-primary text-on-primary font-bold text-xs rounded-2xl hover:opacity-90 transition-all cursor-pointer text-center shadow-lg shadow-primary/10"
                   >
-                    Adicionar
+                    {editingEvent ? 'Salvar' : 'Adicionar'}
                   </button>
                 </div>
               </form>
