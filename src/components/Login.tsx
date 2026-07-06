@@ -34,14 +34,38 @@ export function Login({ onLoginSuccess, theme }: LoginProps) {
       }
 
       if (authData?.user) {
-        const { data: profileData, error: profileError } = await supabase
+        let { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
           .single();
 
         if (profileError) {
-          throw profileError;
+          // If the profile does not exist, auto-create it using auth metadata to recover from past trigger errors
+          const isNotFoundError = profileError.code === 'PGRST116' || 
+                                  profileError.message?.includes('JSON object') || 
+                                  profileError.message?.includes('no rows');
+          
+          if (isNotFoundError) {
+            const newProfile = {
+              id: authData.user.id,
+              name: authData.user.user_metadata?.name || authData.user.email?.split('@')[0] || 'Novo Militar',
+              role: authData.user.user_metadata?.role || 'Operador',
+              access_level: authData.user.user_metadata?.access_level || 'operador',
+              section: authData.user.user_metadata?.section || 'AAJ',
+              avatar: authData.user.user_metadata?.avatar || 'https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80',
+              username: authData.user.user_metadata?.username || authData.user.email?.split('@')[0],
+              online: true
+            };
+            const { error: insertError } = await supabase.from('profiles').insert(newProfile);
+            if (insertError) {
+              console.error('Erro ao auto-criar perfil:', insertError);
+              throw insertError;
+            }
+            profileData = newProfile;
+          } else {
+            throw profileError;
+          }
         }
 
         const matchedUser = mapUserFromDb(profileData);
