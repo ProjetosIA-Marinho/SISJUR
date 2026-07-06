@@ -128,6 +128,7 @@ export function Reports() {
 
       if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
         try {
+          const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(USER_ME.id);
           const { data: signUpData, error: signUpError } = await signUpNewUser(
             email,
             newUserPassword,
@@ -139,17 +140,19 @@ export function Reports() {
               online: newUserOnline,
               avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
               username: newUserUsername.toLowerCase().trim(),
-              created_by: USER_ME.id
+              created_by: isValidUUID ? USER_ME.id : null
             }
           );
 
           if (signUpError) {
-            console.warn('Supabase signUp error, using local storage fallback:', signUpError);
+            console.warn('Supabase signUp error:', signUpError);
+            throw signUpError;
           } else {
             signUpSuccess = true;
           }
         } catch (supabaseErr) {
           console.error('Supabase connection failed during signUp:', supabaseErr);
+          throw supabaseErr;
         }
       }
 
