@@ -17,6 +17,7 @@ export interface User {
   username?: string;
   password?: string;
   createdBy?: string;
+  email?: string;
 }
 
 export interface Task {

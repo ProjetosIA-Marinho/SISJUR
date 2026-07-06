@@ -12,6 +12,7 @@ interface DataContextType {
   updateTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   updateUser: (user: User) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
   refreshAll: () => Promise<void>;
 }
 
@@ -220,8 +221,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteUser = async (id: string) => {
+    const storedTeam = localStorage.getItem('sisjur_team');
+    const localTeamData = storedTeam ? JSON.parse(storedTeam) : mockTeam;
+    const updatedTeam = localTeamData.filter((u: User) => u.id !== id);
+    setLocalData('sisjur_team', updatedTeam);
+    setTeam(updatedTeam);
+
+    if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', id);
+        if (error) console.error('Error deleting user from profiles in Supabase:', error);
+      } catch (err) {
+        console.error('Supabase connection failed during user deletion:', err);
+      }
+    }
+    await refreshAll();
+  };
+
   return (
-    <DataContext.Provider value={{ tasks, team, projects, loading, addTask, updateTask, deleteTask, updateUser, refreshAll }}>
+    <DataContext.Provider value={{ tasks, team, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
       {children}
     </DataContext.Provider>
   );

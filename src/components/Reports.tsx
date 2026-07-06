@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, ChevronDown, UserPlus, Filter, Shield, FileText, Scale, Send, File, X, Eye, EyeOff } from 'lucide-react';
+import { Plus, ChevronDown, UserPlus, Filter, Shield, FileText, Scale, Send, File, X, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
 import { USER_ME } from '../data';
@@ -18,7 +18,7 @@ export function Reports() {
   const [accessFilter, setAccessFilter] = React.useState<'todos' | 'admin' | 'militar'>('todos');
   const [statusFilter, setStatusFilter] = React.useState<'todos' | 'ativos' | 'ausentes'>('todos');
 
-  const { tasks: TASKS, team: TEAM, refreshAll } = useData();
+  const { tasks: TASKS, team: TEAM, refreshAll, deleteUser } = useData();
 
   // Stateful team array to support toggling user profile active status
   const [localTeam, setLocalTeam] = React.useState<User[]>([]);
@@ -41,6 +41,7 @@ export function Reports() {
   const [newUserAvatar, setNewUserAvatar] = React.useState<string>('');
   const [newUserUsername, setNewUserUsername] = React.useState('');
   const [newUserPassword, setNewUserPassword] = React.useState('');
+  const [newUserEmail, setNewUserEmail] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
   const newUserFileRef = React.useRef<HTMLInputElement | null>(null);
@@ -101,13 +102,14 @@ export function Reports() {
     setNewUserAvatar('');
     setNewUserUsername('');
     setNewUserPassword('');
+    setNewUserEmail('');
     setShowPassword(false);
     setIsAddUserOpen(true);
   };
 
   const handleSubmitNewUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName.trim() || !newUserRole.trim() || !newUserUsername.trim() || !newUserPassword.trim()) {
+    if (!newUserName.trim() || !newUserRole.trim() || !newUserUsername.trim() || !newUserPassword.trim() || !newUserEmail.trim()) {
       alert('Por favor, preencha todos os campos do formulário.');
       return;
     }
@@ -120,9 +122,7 @@ export function Reports() {
     }
 
     try {
-      const email = newUserUsername.includes('@') 
-        ? newUserUsername 
-        : `${newUserUsername.toLowerCase().trim()}@sisjur.afa`;
+      const email = newUserEmail.trim();
 
       let signUpSuccess = false;
 
@@ -164,7 +164,8 @@ export function Reports() {
         online: newUserOnline,
         accessLevel: newUserAccess as any,
         section: newUserSection,
-        username: newUserUsername.toLowerCase().trim()
+        username: newUserUsername.toLowerCase().trim(),
+        email: email
       };
 
       const storedTeam = localStorage.getItem('sisjur_team');
@@ -351,26 +352,48 @@ export function Reports() {
             <div key={member.id} className="glass-card p-6 rounded-[2.5rem] flex flex-col justify-between hover:border-primary/50 transition-all shadow-md group">
               <div className="space-y-6">
                 {/* Header Profile */}
-                <div className="flex items-center gap-4">
-                  <img src={member.avatar} className="w-12 h-12 rounded-full object-cover border-2 border-surface-container-high dark:border-slate-800 shadow-sm" alt="" />
-                  <div>
-                    <h4 className="font-black text-sm text-primary leading-snug">{member.name}</h4>
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mt-0.5">{member.role}</p>
-                    {/* Active profile status button */}
-                    <button 
-                      onClick={() => handleToggleStatus(member.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full border transition-all text-[9px] font-black uppercase tracking-wider cursor-pointer",
-                        member.online 
-                          ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20" 
-                          : "bg-neutral-500/15 text-neutral-600 border-neutral-500/30 hover:bg-neutral-500/20"
-                      )}
-                      title="Clique para alternar o status do perfil"
-                    >
-                      <span className={cn("w-1.5 h-1.5 rounded-full", member.online ? "bg-emerald-500 animate-pulse" : "bg-neutral-400")} />
-                      {member.online ? "Ativo" : "Inativo"}
-                    </button>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <img src={member.avatar} className="w-12 h-12 rounded-full object-cover border-2 border-surface-container-high dark:border-slate-800 shadow-sm" alt="" />
+                    <div>
+                      <h4 className="font-black text-sm text-primary leading-snug">{member.name}</h4>
+                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mt-0.5">{member.role}</p>
+                      {/* Active profile status button */}
+                      <button 
+                        onClick={() => handleToggleStatus(member.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full border transition-all text-[9px] font-black uppercase tracking-wider cursor-pointer",
+                          member.online 
+                            ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20" 
+                            : "bg-neutral-500/15 text-neutral-600 border-neutral-500/30 hover:bg-neutral-500/20"
+                        )}
+                        title="Clique para alternar o status do perfil"
+                      >
+                        <span className={cn("w-1.5 h-1.5 rounded-full", member.online ? "bg-emerald-500 animate-pulse" : "bg-neutral-400")} />
+                        {member.online ? "Ativo" : "Inativo"}
+                      </button>
+                    </div>
                   </div>
+
+                  {USER_ME.accessLevel !== 'operador' && member.id !== USER_ME.id && (
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Deseja realmente excluir o militar ${member.name}?`)) {
+                          try {
+                            await deleteUser(member.id);
+                            alert('Militar excluído com sucesso.');
+                          } catch (err) {
+                            console.error(err);
+                            alert('Falha ao excluir militar.');
+                          }
+                        }
+                      }}
+                      className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-xl transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                      title="Excluir Militar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Tasks & Status Wrapper */}
@@ -593,6 +616,19 @@ export function Reports() {
                     value={newUserName}
                     onChange={e => setNewUserName(e.target.value)}
                     placeholder="Ex: Ten. Cel. Rodrigo Silva"
+                    className="w-full px-4 py-3 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/40"
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">E-mail</label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserEmail}
+                    onChange={e => setNewUserEmail(e.target.value)}
+                    placeholder="Ex: rodrigo.silva@sisjur.afa"
                     className="w-full px-4 py-3 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/40"
                   />
                 </div>
