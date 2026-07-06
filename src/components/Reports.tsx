@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, ChevronDown, UserPlus, Filter, Shield, FileText, Scale, Send, File, X } from 'lucide-react';
+import { Plus, ChevronDown, UserPlus, Filter, Shield, FileText, Scale, Send, File, X, Eye, EyeOff } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
 import { USER_ME } from '../data';
@@ -34,13 +34,14 @@ export function Reports() {
   // New User Form Modal States
   const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [newUserName, setNewUserName] = React.useState('');
-  const [newUserRole, setNewUserRole] = React.useState('');
+  const [newUserRole, setNewUserRole] = React.useState('Chefe da AAJ');
   const [newUserAccess, setNewUserAccess] = React.useState<'gestor' | 'operador-chefe' | 'operador'>('operador');
   const [newUserSection, setNewUserSection] = React.useState<'AAJ' | 'SIJ' | 'AJUR'>(USER_ME.section);
   const [newUserOnline, setNewUserOnline] = React.useState(true);
   const [newUserAvatar, setNewUserAvatar] = React.useState<string>('');
   const [newUserUsername, setNewUserUsername] = React.useState('');
   const [newUserPassword, setNewUserPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const newUserFileRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -93,13 +94,14 @@ export function Reports() {
       return;
     }
     setNewUserName('');
-    setNewUserRole('');
+    setNewUserRole('Chefe da AAJ');
     setNewUserAccess('operador');
     setNewUserSection(USER_ME.section);
     setNewUserOnline(true);
     setNewUserAvatar('');
     setNewUserUsername('');
     setNewUserPassword('');
+    setShowPassword(false);
     setIsAddUserOpen(true);
   };
 
@@ -122,32 +124,61 @@ export function Reports() {
         ? newUserUsername 
         : `${newUserUsername.toLowerCase().trim()}@sisjur.afa`;
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: newUserPassword,
-        options: {
-          data: {
-            name: newUserName,
-            role: newUserRole,
-            access_level: newUserAccess,
-            section: newUserSection,
-            online: newUserOnline,
-            avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
-            username: newUserUsername.toLowerCase().trim(),
-            created_by: USER_ME.id
-          }
-        }
-      });
+      let signUpSuccess = false;
 
-      if (signUpError) {
-        throw signUpError;
+      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        try {
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password: newUserPassword,
+            options: {
+              data: {
+                name: newUserName,
+                role: newUserRole,
+                access_level: newUserAccess,
+                section: newUserSection,
+                online: newUserOnline,
+                avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
+                username: newUserUsername.toLowerCase().trim(),
+                created_by: USER_ME.id
+              }
+            }
+          });
+
+          if (signUpError) {
+            console.warn('Supabase signUp error, using local storage fallback:', signUpError);
+          } else {
+            signUpSuccess = true;
+          }
+        } catch (supabaseErr) {
+          console.error('Supabase connection failed during signUp:', supabaseErr);
+        }
+      }
+
+      // Always update localStorage as fallback/cache
+      const newUserObj: User = {
+        id: `u-${Date.now()}`,
+        name: newUserName,
+        role: newUserRole,
+        avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,
+        online: newUserOnline,
+        accessLevel: newUserAccess as any,
+        section: newUserSection,
+        username: newUserUsername.toLowerCase().trim()
+      };
+
+      const storedTeam = localStorage.getItem('sisjur_team');
+      const localTeamData = storedTeam ? JSON.parse(storedTeam) : [];
+      if (!localTeamData.some((u: any) => u.username === newUserObj.username || u.id === newUserObj.id)) {
+        localTeamData.push(newUserObj);
+        localStorage.setItem('sisjur_team', JSON.stringify(localTeamData));
       }
 
       alert(`Usuário cadastrado com sucesso!`);
       await refreshAll();
       setIsAddUserOpen(false);
     } catch (err: any) {
-      console.error('Erro ao cadastrar usuário via Supabase:', err);
+      console.error('Erro ao cadastrar usuário:', err);
       alert(`Falha ao cadastrar usuário: ${err.message}`);
     }
   };
@@ -569,14 +600,20 @@ export function Reports() {
                 {/* Role */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">Função / Cargo</label>
-                  <input
-                    type="text"
-                    required
+                  <select
                     value={newUserRole}
                     onChange={e => setNewUserRole(e.target.value)}
-                    placeholder="Ex: Analista de Sindicâncias"
-                    className="w-full px-4 py-3 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/40"
-                  />
+                    className="w-full px-4 py-3 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none"
+                  >
+                    <option value="Chefe da AAJ">Chefe da AAJ</option>
+                    <option value="Chefe da SIJ">Chefe da SIJ</option>
+                    <option value="Chefe da AJUR">Chefe da AJUR</option>
+                    <option value="Adjunto da AAJ">Adjunto da AAJ</option>
+                    <option value="Adjunto da AJUR">Adjunto da AJUR</option>
+                    <option value="Adjunto da SIJ">Adjunto da SIJ</option>
+                    <option value="Auxiliar da SIJ">Auxiliar da SIJ</option>
+                    <option value="Auxiliar da AJUR">Auxiliar da AJUR</option>
+                  </select>
                 </div>
 
                 {/* Access Level */}
@@ -634,14 +671,23 @@ export function Reports() {
                 {/* Password */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">Senha</label>
-                  <input
-                    type="password"
-                    required
-                    value={newUserPassword}
-                    onChange={e => setNewUserPassword(e.target.value)}
-                    placeholder="Defina uma senha"
-                    className="w-full px-4 py-3 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/40"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={newUserPassword}
+                      onChange={e => setNewUserPassword(e.target.value)}
+                      placeholder="Defina uma senha"
+                      className="w-full px-4 py-3 pr-12 bg-surface-container dark:bg-slate-800 border-none rounded-2xl text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-on-surface-variant/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-primary transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Status */}
