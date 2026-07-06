@@ -42,6 +42,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)) {
@@ -87,19 +88,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // Get current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        setupPresence(session.user.id);
+        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          if (data) {
+            const mapped = mapUserFromDb(data);
+            setCurrentUser(mapped);
+            setupPresence(session.user.id);
+          }
+        });
       }
     });
 
     // Listen for auth changes to update presence tracking
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setupPresence(session.user.id);
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (data) {
+          const mapped = mapUserFromDb(data);
+          setCurrentUser(mapped);
+          setupPresence(session.user.id);
+        }
       } else {
         if (channel) {
           channel.unsubscribe();
           channel = null;
         }
+        setCurrentUser(null);
         setOnlineUsers([]);
       }
     });
@@ -316,9 +329,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     let updatedTeam = [...team];
 
     // Ensure the current user is included in the team list so they show up as online
-    const hasMe = updatedTeam.some(member => member.id === USER_ME.id);
-    if (USER_ME.id && USER_ME.id !== 'unknown' && !hasMe) {
-      updatedTeam.push(USER_ME);
+    if (currentUser) {
+      const hasMe = updatedTeam.some(member => member.id === currentUser.id);
+      if (!hasMe) {
+        updatedTeam.push(currentUser);
+      }
     }
 
     const isSupabaseEnabled = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -327,14 +342,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     return updatedTeam.map(member => {
-      const isMe = member.id === USER_ME.id;
+      const isMe = currentUser ? member.id === currentUser.id : false;
       const isOnline = onlineUsers.includes(member.id) || isMe;
       return {
         ...member,
         online: isOnline
       };
     });
-  }, [team, onlineUsers, USER_ME.id, USER_ME]);
+  }, [team, onlineUsers, currentUser]);
 
   return (
     <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
