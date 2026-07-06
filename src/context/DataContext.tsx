@@ -49,10 +49,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     let channel: any = null;
+    let lastUserId: string | null = null;
 
     // Helper to start tracking presence
     const setupPresence = (userId: string) => {
-      if (channel) return;
+      if (channel && lastUserId === userId) return;
+
+      if (channel) {
+        channel.unsubscribe();
+        channel = null;
+      }
+
+      lastUserId = userId;
       channel = supabase.channel('online-users', {
         config: {
           presence: {
