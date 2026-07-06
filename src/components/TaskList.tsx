@@ -127,8 +127,10 @@ export function TaskList() {
         'Responsável': 'Ten. Cel. Silva',
         'Data Entrada': '2026-07-01',
         'Prazo': '2026-07-10',
+        'Término': '2026-07-12',
         'SIGAD Entrada': 'SIGAD-12345-2026',
-        'SIGAD Saída': '',
+        'SIGAD Saída': 'SIGAD-12347-2026',
+        'Destino': 'SIJ',
         'Tipo': 'Estudo',
         'Ano': '2026',
         'Observações': 'Análise preliminar das demandas do setor de logística'
@@ -140,8 +142,10 @@ export function TaskList() {
         'Responsável': 'Cap. Oliveira',
         'Data Entrada': '2026-07-02',
         'Prazo': '2026-07-15',
+        'Término': '',
         'SIGAD Entrada': 'SIGAD-98765-2026',
         'SIGAD Saída': '',
+        'Destino': 'AJUR',
         'Tipo': 'Portaria',
         'Ano': '2026',
         'Observações': 'Verificar conformidade com a nova legislação'
@@ -156,9 +160,9 @@ export function TaskList() {
 
   const downloadCsvTemplate = () => {
     const headers = [
-      ['Título', 'Status', 'Prioridade', 'Responsável', 'Data Entrada', 'Prazo', 'SIGAD Entrada', 'SIGAD Saída', 'Tipo', 'Ano', 'Observações'],
-      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '2026-07-01', '2026-07-10', 'SIGAD-12345-2026', '', 'Estudo', '2026', 'Análise preliminar das demandas'],
-      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '2026-07-02', '2026-07-15', 'SIGAD-98765-2026', '', 'Portaria', '2026', 'Verificar conformidade com a nova legislação']
+      ['Título', 'Status', 'Prioridade', 'Responsável', 'Data Entrada', 'Prazo', 'Término', 'SIGAD Entrada', 'SIGAD Saída', 'Destino', 'Tipo', 'Ano', 'Observações'],
+      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '2026-07-01', '2026-07-10', '2026-07-12', 'SIGAD-12345-2026', 'SIGAD-12347-2026', 'SIJ', 'Estudo', '2026', 'Análise preliminar das demandas'],
+      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '2026-07-02', '2026-07-15', '', 'SIGAD-98765-2026', '', 'AJUR', 'Portaria', '2026', 'Verificar conformidade com a nova legislação']
     ];
 
     const csvContent = headers.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -214,7 +218,7 @@ export function TaskList() {
 
           const entryDate = String(getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']) || new Date().toISOString().split('T')[0]).trim();
           const dueDate = String(getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']) || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0]).trim();
-          const expeditedDate = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido']) ? String(getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido'])).trim() : undefined;
+          const expeditedDate = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']) ? String(getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término'])).trim() : undefined;
           const sigadOfRec = getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec']) ? String(getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec'])).trim() : undefined;
           const sigadOfExp = getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp']) ? String(getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp'])).trim() : undefined;
           const origem = getField(row, ['origem', 'orgao de origem', 'órgão de origem']) ? String(getField(row, ['origem', 'orgao de origem', 'órgão de origem'])).trim() : undefined;
@@ -2275,9 +2279,19 @@ export function TaskList() {
                           <td className="p-3 text-slate-500">"Ofício", "Estudo", "Portaria", "E-mail", "APF", "Sindicância", etc.</td>
                         </tr>
                         <tr>
+                          <td className="p-3 font-bold text-primary">Término</td>
+                          <td className="p-3">ExpeditedDate, Término, Data Término, Expedido</td>
+                          <td className="p-3 text-slate-500">Formato AAAA-MM-DD (opcional)</td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-bold text-primary">Destino</td>
+                          <td className="p-3">Destination, Destino, Órgão Destino</td>
+                          <td className="p-3 text-slate-500">Destino da tarefa/ofício (opcional)</td>
+                        </tr>
+                        <tr>
                           <td className="p-3 font-bold text-primary">Observações</td>
                           <td className="p-3">Observations, Obs, Observações</td>
-                          <td className="p-3 text-slate-500">Informações complementares (opcional)</td>
+                          <td className="p-3 text-slate-500">Informações complementar (opcional)</td>
                         </tr>
                       </tbody>
                     </table>
