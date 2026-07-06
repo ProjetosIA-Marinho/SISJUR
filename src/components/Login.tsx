@@ -50,7 +50,17 @@ export function Login({ onLoginSuccess, theme }: LoginProps) {
       }
     } catch (err: any) {
       console.error('Falha na autenticação via Supabase:', err);
-      alert('Usuário ou senha incorretos ou erro de conexão.');
+      let errMsg = 'Usuário ou senha incorretos ou erro de conexão.';
+      if (err?.message) {
+        if (err.message.includes('Email not confirmed')) {
+          errMsg = 'O e-mail deste usuário ainda não foi confirmado no Supabase. Por favor, confirme o e-mail ou desative a confirmação obrigatória de e-mail nas configurações de Autenticação (Auth Providers) do console do Supabase.';
+        } else if (err.message.includes('Invalid login credentials') || err.message.includes('invalid_credentials')) {
+          errMsg = 'Usuário ou senha incorretos.';
+        } else {
+          errMsg = `Erro de autenticação: ${err.message}`;
+        }
+      }
+      alert(errMsg);
     }
   };
 
