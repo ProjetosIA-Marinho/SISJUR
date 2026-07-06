@@ -121,6 +121,7 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
 
           {/* Online Members Avatars Stack */}
           <div className="hidden md:flex items-center -space-x-2 mr-2">
+            <span className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant/40 mr-2">Online: {team.filter(m => m.online).length}</span>
             {team.filter(m => m.online).slice(0, 4).map(m => (
               <div key={m.id} className="relative group cursor-pointer" title={`${m.name} está online`}>
                 <img 
