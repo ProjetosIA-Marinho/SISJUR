@@ -57,10 +57,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (channel && lastUserId === userId) return;
 
       if (channel) {
+        console.log('Presence: unsubscribing from old channel for user', lastUserId);
         channel.unsubscribe();
         channel = null;
       }
 
+      console.log('Presence: setting up new channel for user', userId);
       lastUserId = userId;
       channel = supabase.channel('online-users', {
         config: {
@@ -73,14 +75,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       channel
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
+          console.log('Presence: sync event received. State:', state);
           const onlineIds = Object.keys(state);
+          console.log('Presence: online user IDs:', onlineIds);
           setOnlineUsers(onlineIds);
         })
-        .subscribe(async (status: string) => {
+        .subscribe(async (status: string, err?: any) => {
+          console.log('Presence: subscription status change:', status, err || '');
           if (status === 'SUBSCRIBED') {
-            await channel.track({
+            console.log('Presence: successfully subscribed. Tracking presence...');
+            const trackResult = await channel.track({
               online_at: new Date().toISOString(),
             });
+            console.log('Presence: track result:', trackResult);
           }
         });
     };
