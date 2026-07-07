@@ -102,7 +102,10 @@ export function mapTaskToDb(task: Partial<Task>): any {
   if (task.status !== undefined) dbObj.status = task.status;
   if (task.priority !== undefined) dbObj.priority = task.priority;
   if (task.dueDate !== undefined) dbObj.due_date = task.dueDate;
-  if (task.assignee !== undefined) dbObj.assignee_id = task.assignee.id;
+  if (task.assignee !== undefined) {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.assignee.id || '');
+    dbObj.assignee_id = isUUID ? task.assignee.id : null;
+  }
   if (task.progress !== undefined) dbObj.progress = task.progress;
   if (task.sigadOfRec !== undefined) dbObj.sigad_of_rec = task.sigadOfRec;
   if (task.origem !== undefined) dbObj.origem = task.origem;

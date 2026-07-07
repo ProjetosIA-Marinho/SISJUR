@@ -184,7 +184,7 @@ export function TaskList() {
     reader.onload = (evt) => {
       try {
         const bstr = evt.target?.result;
-        const workbook = XLSX.read(bstr, { type: 'binary' });
+        const workbook = XLSX.read(bstr, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const data = XLSX.utils.sheet_to_json<any>(worksheet);
@@ -197,16 +197,24 @@ export function TaskList() {
           return undefined;
         };
 
-        const parseDate = (val: string): string => {
+        const parseDate = (val: any): string => {
           if (!val) return '';
-          const dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+          if (val instanceof Date) {
+            return val.toISOString().split('T')[0];
+          }
+          const valStr = String(val).trim();
+          const dmyMatch = valStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
           if (dmyMatch) {
             const day = dmyMatch[1].padStart(2, '0');
             const month = dmyMatch[2].padStart(2, '0');
             const year = dmyMatch[3];
             return `${year}-${month}-${day}`;
           }
-          return val;
+          const parsed = Date.parse(valStr);
+          if (!isNaN(parsed)) {
+            return new Date(parsed).toISOString().split('T')[0];
+          }
+          return valStr;
         };
 
         const importedTasks: Task[] = data.map((row: any, index: number) => {
@@ -226,30 +234,29 @@ export function TaskList() {
           else if (prioVal.includes('urg') || prioVal === 'urgent') priority = 'urgent';
 
           const assigneeName = String(getField(row, ['assignee', 'responsavel', 'responsável', 'agente']) || '').trim();
-          let matchedAssignee = TEAM.find(member => member.name.toLowerCase().includes(assigneeName.toLowerCase()));
+          let matchedAssignee = TEAM.find(member => 
+            member.name.toLowerCase().includes(assigneeName.toLowerCase()) ||
+            assigneeName.toLowerCase().includes(member.name.toLowerCase()) ||
+            (member.username && member.username.toLowerCase().includes(assigneeName.toLowerCase())) ||
+            (member.username && assigneeName.toLowerCase().includes(member.username.toLowerCase()))
+          );
           
+          let observations = getField(row, ['observations', 'observacoes', 'observações', 'obs']) ? String(getField(row, ['observations', 'observacoes', 'observações', 'obs'])).trim() : undefined;
+
           if (!matchedAssignee && assigneeName) {
-            matchedAssignee = {
-              id: `u-temp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              name: assigneeName,
-              role: 'Militar Importado',
-              avatar: 'https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80',
-              accessLevel: 'operador',
-              section: 'AAJ'
-            };
+            matchedAssignee = USER_ME;
+            observations = `${observations ? observations + ' | ' : ''}Resp. original: ${assigneeName}`;
           } else if (!matchedAssignee) {
             matchedAssignee = USER_ME;
           }
 
-          const entryDateRaw = String(getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']) || '').trim();
+          const entryDateRaw = getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']);
           const entryDate = entryDateRaw ? parseDate(entryDateRaw) : new Date().toISOString().split('T')[0];
 
-          const dueDateRaw = String(getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']) || '').trim();
+          const dueDateRaw = getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']);
           const dueDate = dueDateRaw ? parseDate(dueDateRaw) : new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0];
 
-          const expeditedDateRaw = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']) 
-            ? String(getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término'])).trim() 
-            : '';
+          const expeditedDateRaw = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']);
           const expeditedDate = expeditedDateRaw ? parseDate(expeditedDateRaw) : undefined;
 
           const sigadOfRec = getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec']) ? String(getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec'])).trim() : undefined;
@@ -258,7 +265,6 @@ export function TaskList() {
           const destination = getField(row, ['destino', 'orgao de destino', 'órgão de destino']) ? String(getField(row, ['destino', 'orgao de destino', 'órgão de destino'])).trim() : undefined;
           const documentType = getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento']) ? String(getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento'])).trim() : undefined;
           const year = getField(row, ['year', 'ano']) ? String(getField(row, ['year', 'ano'])).trim() : undefined;
-          const observations = getField(row, ['observations', 'observacoes', 'observações', 'obs']) ? String(getField(row, ['observations', 'observacoes', 'observações', 'obs'])).trim() : undefined;
 
           return {
             id: 't_imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
