@@ -12,8 +12,10 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Login } from './components/Login';
 import { supabase, mapUserFromDb } from './lib/supabase';
 import { setActiveUserInMemory } from './data';
+import { useData } from './context/DataContext';
 
 export default function App() {
+  const { refreshAll } = useData();
   const [currentView, setCurrentView] = React.useState<ViewType>('dashboard');
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -56,10 +58,12 @@ export default function App() {
         if (data) {
           updateActiveUser(mapUserFromDb(data));
           setIsAuthenticated(true);
+          refreshAll();
         }
       } else {
         updateActiveUser(null);
         setIsAuthenticated(false);
+        refreshAll();
       }
     });
 
@@ -106,9 +110,10 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <Login 
-        onLoginSuccess={(user) => {
+        onLoginSuccess={async (user) => {
           updateActiveUser(user);
           setIsAuthenticated(true);
+          await refreshAll();
         }}
         theme={theme}
       />
