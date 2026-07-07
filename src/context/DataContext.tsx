@@ -150,6 +150,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
+  const currentUserRef = React.useRef(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   useEffect(() => {
     if (!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)) {
       return;
@@ -198,27 +203,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Listen for auth changes to update presence tracking
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+        if (currentUserRef.current && currentUserRef.current.id === session.user.id) {
+          setupPresence(session.user.id);
+          refreshAll();
+          return;
+        }
+
+        try {
+          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
           if (data) {
             const mapped = mapUserFromDb(data);
             setCurrentUser(mapped);
             setupPresence(session.user.id);
           }
-        });
-      }
-    });
-
-    // Listen for auth changes to update presence tracking
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        if (data) {
-          const mapped = mapUserFromDb(data);
-          setCurrentUser(mapped);
-          setupPresence(session.user.id);
+        } catch (err) {
+          console.error('Error fetching profile in DataProvider:', err);
         }
         refreshAll();
       } else {

@@ -35,36 +35,38 @@ export default function App() {
     setActiveUserInMemory(user);
   };
 
+  const activeUserRef = React.useRef(activeUser);
   React.useEffect(() => {
-    // 1. Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    activeUserRef.current = activeUser;
+  }, [activeUser]);
+
+  React.useEffect(() => {
+    // Setup auth state listener (handles both initial session check and real-time auth changes)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+        // If user is already loaded in memory (e.g. set by Login component), skip fetching again
+        if (activeUserRef.current && activeUserRef.current.id === session.user.id) {
+          setIsAuthenticated(true);
+          setLoadingSession(false);
+          return;
+        }
+
+        try {
+          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
           if (data) {
             updateActiveUser(mapUserFromDb(data));
             setIsAuthenticated(true);
+            refreshAll();
           }
-          setLoadingSession(false);
-        });
-      } else {
-        setLoadingSession(false);
-      }
-    });
-
-    // 2. Setup auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        if (data) {
-          updateActiveUser(mapUserFromDb(data));
-          setIsAuthenticated(true);
-          refreshAll();
+        } catch (err) {
+          console.error('Error fetching profile on auth change:', err);
         }
       } else {
         updateActiveUser(null);
         setIsAuthenticated(false);
         refreshAll();
       }
+      setLoadingSession(false);
     });
 
     return () => {
