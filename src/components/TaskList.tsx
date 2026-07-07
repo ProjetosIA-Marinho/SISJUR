@@ -956,7 +956,7 @@ export function TaskList() {
                     />
                   </th>
                 )}
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[320px] w-[360px]">Tarefa & SIGAD</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[200px] w-[250px]">Tarefa & SIGAD</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[150px] w-[160px]">Responsável</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[160px]">Status</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em]">Datas</th>
@@ -985,7 +985,7 @@ export function TaskList() {
                         />
                       </td>
                     )}
-                    <td className="px-6 py-6 min-w-[320px] w-[360px]">
+                    <td className="px-6 py-6 min-w-[200px]">
                       <div className="flex items-start gap-4">
                         <button 
                           onClick={() => toggleExpandTask(task.id)}
@@ -996,7 +996,7 @@ export function TaskList() {
                         <div className="space-y-1">
                           <p 
                             onClick={() => setEditingTask(task)}
-                            className="font-bold text-sm leading-tight text-primary group-hover:underline cursor-pointer whitespace-nowrap"
+                            className="font-bold text-sm leading-tight text-primary group-hover:underline cursor-pointer break-words max-w-[200px]"
                           >
                             {task.title}
                           </p>
