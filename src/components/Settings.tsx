@@ -86,29 +86,27 @@ export function Settings() {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 120;
-        const MAX_HEIGHT = 120;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
+        const size = 150; // Standard 1:1 square size for avatars
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          // Crop to a perfect centered square (1:1)
+          let sourceX = 0;
+          let sourceY = 0;
+          let sourceWidth = img.width;
+          let sourceHeight = img.height;
+
+          if (img.width > img.height) {
+            sourceWidth = img.height;
+            sourceX = (img.width - img.height) / 2;
+          } else {
+            sourceHeight = img.width;
+            sourceY = (img.height - img.width) / 2;
+          }
+
+          ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, size, size);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
           callback(dataUrl);
         }
       };
