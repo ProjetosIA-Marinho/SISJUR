@@ -497,7 +497,14 @@ export function Dashboard() {
                     {/* Header: Member Avatar + Name + Legend */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <img src={member.avatar} className="w-8 h-8 rounded-full object-cover border-2 border-surface-container-high dark:border-slate-800 shadow-sm" alt="" />
+                        <img 
+                          src={member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`} 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=random`;
+                          }}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-surface-container-high dark:border-slate-800 shadow-sm" 
+                          alt="" 
+                        />
                         <div>
                           <p className="font-bold text-xs text-primary leading-tight">{member.name}</p>
                           <p className="text-[9px] text-on-surface-variant uppercase tracking-wider">{member.role}</p>
