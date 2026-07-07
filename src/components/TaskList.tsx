@@ -266,6 +266,12 @@ export function TaskList() {
           const documentType = getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento']) ? String(getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento'])).trim() : undefined;
           const year = getField(row, ['year', 'ano']) ? String(getField(row, ['year', 'ano'])).trim() : undefined;
 
+          // Resolve Setor Responsável (stored in tags array, options: 'AAJ', 'SIJ', 'AJUR')
+          const setorVal = String(getField(row, ['setor', 'setor responsável', 'setor responsavel', 'seção', 'secao']) || '').toUpperCase().trim();
+          const finalSetor = ['AAJ', 'SIJ', 'AJUR'].includes(setorVal) 
+            ? setorVal 
+            : (matchedAssignee ? matchedAssignee.section : 'AAJ');
+
           return {
             id: 't_imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             title,
@@ -282,6 +288,7 @@ export function TaskList() {
             documentType,
             year,
             observations,
+            tags: [finalSetor],
             progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
             subtasks: []
           };
