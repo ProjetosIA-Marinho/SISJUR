@@ -446,7 +446,7 @@ export function Settings() {
                     <th className="pb-4">Função / Seção</th>
                     <th className="pb-4">Nível Acesso</th>
                     <th className="pb-4">Login / Usuário</th>
-                    <th className="pb-4">Status</th>
+                    <th className="pb-4">Conexão</th>
                     <th className="pb-4 pr-4 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -457,7 +457,10 @@ export function Settings() {
                         <td className="py-4 pl-4 flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full overflow-hidden border border-surface-container-high dark:border-slate-700 flex-shrink-0">
                             <img 
-                              src={u.avatar} 
+                              src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=random`} 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=random`;
+                              }}
                               alt="" 
                               style={{ transform: `scale(${u.avatarZoom ? u.avatarZoom / 100 : 1})` }}
                               className="w-full h-full object-cover" 
@@ -485,7 +488,7 @@ export function Settings() {
                               : "bg-neutral-500/15 text-neutral-600 border-neutral-500/30"
                           )}>
                             <span className={cn("w-1 h-1 rounded-full", u.online ? "bg-emerald-500 animate-pulse" : "bg-neutral-400")} />
-                            {u.online ? "Ativo" : "Inativo"}
+                            {u.online ? "Online" : "Offline"}
                           </span>
                         </td>
                         <td className="py-4 pr-4 text-right flex items-center justify-end gap-2">
