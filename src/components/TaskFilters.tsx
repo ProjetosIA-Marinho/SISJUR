@@ -4,6 +4,7 @@ import { TaskStatus, TaskPriority, Task } from '../types';
 import { TEAM, USER_ME } from '../data';
 import { cn } from '../lib/utils';
 import { CustomSelect } from './CustomSelect';
+import { useData } from '../context/DataContext';
 
 const documentTypeOptions = [
   { value: '', label: 'Todos os tipos' },
@@ -36,15 +37,7 @@ const statusOptions = [
   { value: 'suspended', label: 'Suspensa' },
 ];
 
-const assigneeOptions = [
-  { value: '', label: 'Qualquer membro' },
-  { value: USER_ME.id, label: `${USER_ME.name} (Eu)`, avatar: USER_ME.avatar },
-  ...TEAM.map(member => ({
-    value: member.id,
-    label: member.name,
-    avatar: member.avatar
-  }))
-];
+// assigneeOptions is now computed dynamically inside the TaskFilters component to reflect the real team from context and user's sector.
 
 
 interface TaskFiltersProps {
@@ -56,6 +49,40 @@ interface TaskFiltersProps {
 }
 
 export function TaskFilters({ filters: filtersProp, onFilterChange, bulkEditMode, onBulkEditToggle, tasks = [] }: TaskFiltersProps) {
+  const { team: dbTeam } = useData();
+
+  const assigneeOptions = React.useMemo(() => {
+    const activeMembers = dbTeam.length > 0 ? dbTeam : TEAM;
+    
+    // Filter by sector if the user is not a gestor
+    const sectorMembers = USER_ME.accessLevel !== 'gestor'
+      ? activeMembers.filter(member => member.section === USER_ME.section)
+      : activeMembers;
+
+    const options: { value: string; label: string; avatar?: string }[] = [{ value: '', label: 'Qualquer membro' }];
+    
+    // Add USER_ME first if they are part of the sector or if they are gestor
+    const meObj = activeMembers.find(m => m.id === USER_ME.id) || USER_ME;
+    options.push({
+      value: meObj.id,
+      label: `${meObj.name} (Eu)`,
+      avatar: meObj.avatar
+    });
+
+    // Add other members of the sector/team
+    sectorMembers.forEach(member => {
+      if (member.id !== meObj.id) {
+        options.push({
+          value: member.id,
+          label: member.name,
+          avatar: member.avatar
+        });
+      }
+    });
+
+    return options;
+  }, [dbTeam]);
+
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [filters, setFilters] = React.useState({
     search: '',
