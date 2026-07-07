@@ -146,13 +146,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (usersError) throw usersError;
         const mappedUsers = (usersData || []).map(mapUserFromDb);
 
-        // Fetch Tasks referencing profiles as users alias
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select('*, users:profiles!assignee_id(*)');
-        
-        if (tasksError) throw tasksError;
-        const allTasks = (tasksData || []).map(mapTaskFromDb);
+        // Fetch Tasks referencing profiles as users alias (with pagination to bypass 1000-row limit)
+        let allTasksData: any[] = [];
+        let start = 0;
+        const limit = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: chunk, error: tasksError } = await supabase
+            .from('tasks')
+            .select('*, users:profiles!assignee_id(*)')
+            .range(start, start + limit - 1);
+          
+          if (tasksError) throw tasksError;
+
+          if (chunk && chunk.length > 0) {
+            allTasksData = [...allTasksData, ...chunk];
+            start += limit;
+            if (chunk.length < limit) {
+              hasMore = false;
+            }
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const allTasks = allTasksData.map(mapTaskFromDb);
 
         // Fetch Projects
         const { data: projectsData, error: projectsError } = await supabase
