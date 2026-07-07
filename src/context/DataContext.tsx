@@ -44,94 +44,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    if (!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)) {
-      return;
-    }
-
-    let channel: any = null;
-    let lastUserId: string | null = null;
-
-    // Helper to start tracking presence
-    const setupPresence = (userId: string) => {
-      if (channel && lastUserId === userId) return;
-
-      if (channel) {
-        console.log('Presence: unsubscribing from old channel for user', lastUserId);
-        channel.unsubscribe();
-        channel = null;
-      }
-
-      console.log('Presence: setting up new channel for user', userId);
-      lastUserId = userId;
-      channel = supabase.channel('online-users', {
-        config: {
-          presence: {
-            key: userId,
-          },
-        },
-      });
-
-      channel
-        .on('presence', { event: 'sync' }, () => {
-          const state = channel.presenceState();
-          console.log('Presence: sync event received. State:', state);
-          const onlineIds = Object.keys(state);
-          console.log('Presence: online user IDs:', onlineIds);
-          setOnlineUsers(onlineIds);
-        })
-        .subscribe(async (status: string, err?: any) => {
-          console.log('Presence: subscription status change:', status, err || '');
-          if (status === 'SUBSCRIBED') {
-            console.log('Presence: successfully subscribed. Tracking presence...');
-            const trackResult = await channel.track({
-              online_at: new Date().toISOString(),
-            });
-            console.log('Presence: track result:', trackResult);
-          }
-        });
-    };
-
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
-          if (data) {
-            const mapped = mapUserFromDb(data);
-            setCurrentUser(mapped);
-            setupPresence(session.user.id);
-          }
-        });
-      }
-    });
-
-    // Listen for auth changes to update presence tracking
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        if (data) {
-          const mapped = mapUserFromDb(data);
-          setCurrentUser(mapped);
-          setupPresence(session.user.id);
-        }
-      } else {
-        if (channel) {
-          channel.unsubscribe();
-          channel = null;
-        }
-        setCurrentUser(null);
-        setOnlineUsers([]);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-      if (channel) {
-        channel.unsubscribe();
-      }
-    };
-  }, []);
-
   const refreshAll = async () => {
     setLoading(true);
     let success = false;
@@ -237,6 +149,96 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)) {
+      return;
+    }
+
+    let channel: any = null;
+    let lastUserId: string | null = null;
+
+    // Helper to start tracking presence
+    const setupPresence = (userId: string) => {
+      if (channel && lastUserId === userId) return;
+
+      if (channel) {
+        console.log('Presence: unsubscribing from old channel for user', lastUserId);
+        channel.unsubscribe();
+        channel = null;
+      }
+
+      console.log('Presence: setting up new channel for user', userId);
+      lastUserId = userId;
+      channel = supabase.channel('online-users', {
+        config: {
+          presence: {
+            key: userId,
+          },
+        },
+      });
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState();
+          console.log('Presence: sync event received. State:', state);
+          const onlineIds = Object.keys(state);
+          console.log('Presence: online user IDs:', onlineIds);
+          setOnlineUsers(onlineIds);
+        })
+        .subscribe(async (status: string, err?: any) => {
+          console.log('Presence: subscription status change:', status, err || '');
+          if (status === 'SUBSCRIBED') {
+            console.log('Presence: successfully subscribed. Tracking presence...');
+            const trackResult = await channel.track({
+              online_at: new Date().toISOString(),
+            });
+            console.log('Presence: track result:', trackResult);
+          }
+        });
+    };
+
+    // Get current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+          if (data) {
+            const mapped = mapUserFromDb(data);
+            setCurrentUser(mapped);
+            setupPresence(session.user.id);
+          }
+        });
+      }
+    });
+
+    // Listen for auth changes to update presence tracking
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (data) {
+          const mapped = mapUserFromDb(data);
+          setCurrentUser(mapped);
+          setupPresence(session.user.id);
+        }
+        refreshAll();
+      } else {
+        if (channel) {
+          channel.unsubscribe();
+          channel = null;
+        }
+        setCurrentUser(null);
+        setOnlineUsers([]);
+        refreshAll();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (channel) {
+        channel.unsubscribe();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     refreshAll();
