@@ -19,8 +19,21 @@ export function Dashboard() {
   const [selectedYear, setSelectedYear] = React.useState<string>('Todos');
   const [memberSearch, setMemberSearch] = React.useState('');
 
-  // Year filter logic
-  const years = ['Todos', '2026', '2025', '2024'];
+  // Year filter logic (dynamically computed from tasks)
+  const years = React.useMemo(() => {
+    const yearsSet = new Set<string>();
+    TASKS.forEach(task => {
+      if (task.year) {
+        yearsSet.add(task.year);
+      } else if (task.entryDate) {
+        const yr = task.entryDate.split('-')[0];
+        if (yr && yr.length === 4) yearsSet.add(yr);
+      }
+    });
+    // Add default options if not present
+    ['2026', '2025', '2024'].forEach(y => yearsSet.add(y));
+    return ['Todos', ...Array.from(yearsSet).sort((a, b) => b.localeCompare(a))];
+  }, [TASKS]);
 
   // Helper to extract sector
   const getSector = (task: typeof TASKS[0]) => {
@@ -37,7 +50,8 @@ export function Dashboard() {
       if (taskSector !== USER_ME.section) return false;
     }
     if (selectedYear === 'Todos') return true;
-    return task.year === selectedYear;
+    const taskYear = task.year || (task.entryDate ? task.entryDate.split('-')[0] : '');
+    return taskYear === selectedYear;
   });
 
   // Calculate dynamic metrics
