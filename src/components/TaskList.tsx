@@ -432,11 +432,11 @@ export function TaskList() {
 
   const getStatusStyles = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'in-progress': return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'not-started': return 'bg-slate-50 text-slate-700 border-slate-100';
-      case 'delayed': return 'bg-red-50 text-red-700 border-red-100';
-      case 'suspended': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'completed': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-500/20';
+      case 'in-progress': return 'bg-orange-500/10 text-orange-500 border-orange-500/30 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-500/20';
+      case 'not-started': return 'bg-slate-500/10 text-slate-500 border-slate-500/30 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800';
+      case 'delayed': return 'bg-red-500/10 text-red-500 border-red-500/30 dark:bg-red-950/40 dark:text-red-400 dark:border-red-500/20';
+      case 'suspended': return 'bg-amber-500/10 text-amber-500 border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-500/20';
       default: return 'bg-surface-container text-on-surface-variant border-surface-container-high';
     }
   };
