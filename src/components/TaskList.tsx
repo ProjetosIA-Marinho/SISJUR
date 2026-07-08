@@ -1191,7 +1191,7 @@ export function TaskList() {
                                   title: form.title,
                                   status: form.status as any,
                                   priority: 'medium',
-                                  dueDate: form.dueDate || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
+                                  dueDate: task.dueDate || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
                                   entryDate: form.entryDate || new Date().toISOString().split('T')[0],
                                   expeditedDate: form.expeditedDate || '',
                                   sigadOfExp: form.sigadOfExp || '',
@@ -1690,15 +1690,12 @@ export function TaskList() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Prazo</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Prazo (Igual à Principal)</label>
                     <input 
                       type="date" 
-                      value={editingSubtask.subtask.dueDate || ''}
-                      onChange={e => setEditingSubtask({
-                        ...editingSubtask,
-                        subtask: { ...editingSubtask.subtask, dueDate: e.target.value }
-                      })}
-                      className="w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-primary transition-all text-sm font-bold focus:outline-none"
+                      disabled
+                      value={tasks.find(t => t.id === editingSubtask.mainTaskId)?.dueDate || ''}
+                      className="w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 text-sm font-bold opacity-75 cursor-not-allowed"
                     />
                   </div>
 
@@ -1746,11 +1743,16 @@ export function TaskList() {
                   type="button"
                   onClick={() => {
                     const { mainTaskId, subtask } = editingSubtask;
+                    const parentTask = tasks.find(t => t.id === mainTaskId);
+                    const updatedSubtask = {
+                      ...subtask,
+                      dueDate: parentTask?.dueDate || subtask.dueDate
+                    };
                     setTasks(prev => prev.map(t => {
                       if (t.id === mainTaskId) {
                         return {
                           ...t,
-                          subtasks: t.subtasks?.map(st => st.id === subtask.id ? subtask : st)
+                          subtasks: t.subtasks?.map(st => st.id === subtask.id ? updatedSubtask : st)
                         };
                       }
                       return t;
@@ -1829,7 +1831,7 @@ export function TaskList() {
                   <button 
                     onClick={() => setSelectedDrawerTaskId(null)}
                     title="Fechar Painel"
-                    className="p-3 hover:bg-surface-container-high dark:hover:bg-slate-800 rounded-2xl transition-all cursor-pointer border border-surface-container-high dark:border-slate-800 ml-2 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center"
+                    className="p-3 hover:bg-surface-container-high dark:hover:bg-slate-800 rounded-2xl transition-all cursor-pointer border border-surface-container-high dark:border-slate-800 ml-2 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center text-on-surface-variant hover:text-on-surface"
                   >
                     <X size={16} />
                   </button>

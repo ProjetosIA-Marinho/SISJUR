@@ -145,7 +145,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
         title: subtaskForm.title,
         status: subtaskForm.status || 'not-started',
         priority: subtaskForm.priority || 'low',
-        dueDate: subtaskForm.dueDate || new Date().toISOString().split('T')[0],
+        dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
         assignee: subtaskForm.assignee || USER_ME,
         progress: subtaskForm.status === 'completed' ? 100 : 0,
         sigadOfRec: '',
@@ -169,7 +169,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
         title: '',
         status: 'not-started',
         priority: 'low',
-        dueDate: new Date().toISOString().split('T')[0],
+        dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
         assignee: USER_ME,
         sigadOfExp: '',
         destination: '',
@@ -461,12 +461,12 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Prazo</label>
+                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Prazo (Igual à Principal)</label>
                 <input 
                   type="date"
-                  value={subtaskForm.dueDate || ''}
-                  onChange={e => setSubtaskForm({ ...subtaskForm, dueDate: e.target.value })}
-                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary"
+                  disabled
+                  value={formData.dueDate || ''}
+                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold opacity-75 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">

@@ -234,7 +234,7 @@ export function Calendar() {
         status: existingTask?.status || 'not-started',
         priority: newType === 'task' ? (newPriority as TaskPriority) : 'medium',
         dueDate: newDateStr,
-        assignee: newType === 'holiday' ? { id: 'holiday-system', name: 'Sistema', role: '', avatar: '', accessLevel: 'operador', section: 'AAJ' } : assigneeUser,
+        assignee: newType === 'holiday' ? USER_ME : assigneeUser,
         progress: existingTask?.progress || 0,
         documentType: newType,
         sigadOfRec: existingTask?.sigadOfRec,
@@ -264,7 +264,7 @@ export function Calendar() {
         status: 'not-started',
         priority: newType === 'task' ? (newPriority as TaskPriority) : 'medium',
         dueDate: newDateStr,
-        assignee: newType === 'holiday' ? { id: 'holiday-system', name: 'Sistema', role: '', avatar: '', accessLevel: 'operador', section: 'AAJ' } : assigneeUser,
+        assignee: newType === 'holiday' ? USER_ME : assigneeUser,
         progress: 0,
         documentType: newType
       };
