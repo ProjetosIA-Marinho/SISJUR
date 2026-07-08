@@ -2176,7 +2176,7 @@ export function TaskList() {
               <div className="p-6 border-t border-surface-container bg-surface-container-low/40 flex gap-3">
                 <button 
                   onClick={() => setSelectedDrawerTaskId(null)}
-                  className="flex-1 py-4 px-6 border border-surface-container-high rounded-2xl font-bold text-sm hover:bg-surface-container active:scale-[0.98] transition-all cursor-pointer text-center bg-white"
+                  className="flex-1 py-4 px-6 border border-surface-container-high dark:border-slate-800 rounded-2xl font-bold text-sm text-on-surface-variant hover:text-on-surface dark:text-slate-300 dark:hover:text-slate-100 hover:bg-surface-container dark:hover:bg-slate-800 active:scale-[0.98] transition-all cursor-pointer text-center bg-white dark:bg-slate-900"
                 >
                   Fechar Visualização
                 </button>
