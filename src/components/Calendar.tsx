@@ -110,6 +110,10 @@ export function Calendar() {
     const dayTasks = calendarEvents.filter(event => {
       if (event.dueDate !== dateString) return false;
       if (event.type === 'holiday') return true; // Holidays are always shown
+      if (event.type === 'routine' && USER_ME.accessLevel !== 'gestor') {
+        const assignee = TEAM.find(m => m.id === event.assigneeId);
+        if (!assignee || assignee.section !== USER_ME.section) return false;
+      }
       if (!event.assigneeId) return false;
       return selectedMainMember.includes(event.assigneeId);
     });
@@ -133,6 +137,10 @@ export function Calendar() {
     const dayTasks = calendarEvents.filter(event => {
       if (event.dueDate !== dateString) return false;
       if (event.type === 'holiday') return true;
+      if (event.type === 'routine' && USER_ME.accessLevel !== 'gestor') {
+        const assignee = TEAM.find(m => m.id === event.assigneeId);
+        if (!assignee || assignee.section !== USER_ME.section) return false;
+      }
       if (!event.assigneeId) return false;
       return selectedMainMember.includes(event.assigneeId);
     });
@@ -274,7 +282,15 @@ export function Calendar() {
   // Count active tasks/events visible in selected filters
   const visibleTasksCount = calendarEvents.filter(event => {
     if (!event.dueDate) return false;
-    if (event.type !== 'holiday' && event.assigneeId && !selectedMainMember.includes(event.assigneeId)) return false;
+    if (event.type === 'holiday') {
+      // always count holidays
+    } else {
+      if (event.type === 'routine' && USER_ME.accessLevel !== 'gestor') {
+        const assignee = TEAM.find(m => m.id === event.assigneeId);
+        if (!assignee || assignee.section !== USER_ME.section) return false;
+      }
+      if (event.assigneeId && !selectedMainMember.includes(event.assigneeId)) return false;
+    }
     
     const [y, m, d] = event.dueDate.split('-').map(Number);
     if (viewMode === 'month') {
@@ -557,7 +573,12 @@ export function Calendar() {
             {monthNames.map((mName, mIdx) => {
               const monthTasks = calendarEvents.filter(event => {
                 if (!event.dueDate) return false;
-                if (event.type !== 'holiday' && event.assigneeId && !selectedMainMember.includes(event.assigneeId)) return false;
+                if (event.type === 'holiday') return true;
+                if (event.type === 'routine' && USER_ME.accessLevel !== 'gestor') {
+                  const assignee = TEAM.find(m => m.id === event.assigneeId);
+                  if (!assignee || assignee.section !== USER_ME.section) return false;
+                }
+                if (event.assigneeId && !selectedMainMember.includes(event.assigneeId)) return false;
                 const [y, m] = event.dueDate.split('-').map(Number);
                 return y === year && (m - 1) === mIdx;
               });

@@ -88,6 +88,26 @@ CREATE POLICY "Operadores podem ver e editar suas próprias tasks" ON public.tas
     assignee_id = auth.uid()::text
   );
 
+-- Políticas para Feriados (document_type = 'holiday')
+CREATE POLICY "Qualquer usuario pode ver feriados" ON public.tasks
+  FOR SELECT USING (document_type = 'holiday');
+
+CREATE POLICY "Operadores e operadores-chefe podem gerenciar feriados" ON public.tasks
+  FOR ALL USING (
+    document_type = 'holiday' AND 
+    (public.get_my_access_level() = 'operador' OR public.get_my_access_level() = 'operador-chefe')
+  );
+
+-- Políticas para Rotinas (document_type = 'routine')
+CREATE POLICY "Usuarios podem ver rotinas da sua secao" ON public.tasks
+  FOR SELECT USING (
+    document_type = 'routine' AND
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE profiles.id::text = tasks.assignee_id AND profiles.section = public.get_my_section()
+    )
+  );
+
 -- 7. Trigger para criar o profile automaticamente ao cadastrar um usuário no Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
