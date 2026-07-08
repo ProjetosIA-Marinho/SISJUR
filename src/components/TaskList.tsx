@@ -1183,7 +1183,7 @@ export function TaskList() {
                             <form 
                               onSubmit={(e) => {
                                 e.preventDefault();
-                                const form = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
+                                const form = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
                                 if (!form.title.trim()) return;
 
                                 const newSub: Task = {
@@ -1195,6 +1195,7 @@ export function TaskList() {
                                   entryDate: form.entryDate || new Date().toISOString().split('T')[0],
                                   expeditedDate: form.expeditedDate || '',
                                   sigadOfExp: form.sigadOfExp || '',
+                                  destination: form.destination || '',
                                   assignee: TEAM.find(t => t.id === form.assigneeId) || USER_ME,
                                   progress: form.status === 'completed' ? 100 : form.status === 'in-progress' ? 50 : 0,
                                   subtasks: [],
@@ -1220,7 +1221,8 @@ export function TaskList() {
                                     entryDate: new Date().toISOString().split('T')[0],
                                     expeditedDate: '',
                                     sigadOfExp: '',
-                                    dueDate: ''
+                                    dueDate: '',
+                                    destination: ''
                                   }
                                 }));
                               }}
@@ -1283,14 +1285,14 @@ export function TaskList() {
                               </div>
 
                               {/* Row 2 */}
-                              <div className="md:col-span-3 space-y-1">
+                              <div className="md:col-span-2 space-y-1">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Sigad Exp</label>
                                 <input 
                                   type="text"
                                   placeholder="Ex: 531630"
                                   value={quickSubtaskForms[task.id]?.sigadOfExp || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, sigadOfExp: e.target.value }
@@ -1300,12 +1302,28 @@ export function TaskList() {
                                 />
                               </div>
                               <div className="md:col-span-3 space-y-1">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Destino</label>
+                                <input 
+                                  type="text"
+                                  placeholder="Ex: AJUR ou DIRENS"
+                                  value={quickSubtaskForms[task.id]?.destination || ''}
+                                  onChange={e => {
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
+                                    setQuickSubtaskForms({
+                                      ...quickSubtaskForms,
+                                      [task.id]: { ...curr, destination: e.target.value }
+                                    });
+                                  }}
+                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Data Entrada</label>
                                 <input 
-                                  type="date"
+                                  type="date" 
                                   value={quickSubtaskForms[task.id]?.entryDate || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, entryDate: e.target.value }
@@ -1314,13 +1332,13 @@ export function TaskList() {
                                   className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
-                              <div className="md:col-span-3 space-y-1">
+                              <div className="md:col-span-2 space-y-1">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Data Exp</label>
                                 <input 
                                   type="date"
                                   value={quickSubtaskForms[task.id]?.expeditedDate || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, expeditedDate: e.target.value }
@@ -1573,16 +1591,16 @@ export function TaskList() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden border border-surface-container shadow-2xl flex flex-col max-h-[90vh]"
+              className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl overflow-hidden border border-surface-container dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh]"
             >
-              <div className="p-8 border-b border-surface-container flex justify-between items-center bg-surface-container-low/30">
+              <div className="p-8 border-b border-surface-container dark:border-slate-800 flex justify-between items-center bg-surface-container-low/30 dark:bg-slate-950/20">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">Edição Rápida</span>
                   <h2 className="text-2xl font-black mt-2 text-primary">Editar Tarefa Relacionada</h2>
                 </div>
                 <button 
                   onClick={() => setEditingSubtask(null)}
-                  className="p-3 hover:bg-surface-container rounded-2xl transition-all"
+                  className="p-3 hover:bg-surface-container dark:hover:bg-slate-800 rounded-2xl transition-all text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   <X size={20} />
                 </button>
@@ -1647,7 +1665,7 @@ export function TaskList() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Sigad Exp</label>
                     <input 
@@ -1656,6 +1674,19 @@ export function TaskList() {
                       onChange={e => setEditingSubtask({
                         ...editingSubtask,
                         subtask: { ...editingSubtask.subtask, sigadOfExp: e.target.value }
+                      })}
+                      className="w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-primary transition-all text-sm font-bold focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Destino</label>
+                    <input 
+                      type="text" 
+                      value={editingSubtask.subtask.destination || ''}
+                      onChange={e => setEditingSubtask({
+                        ...editingSubtask,
+                        subtask: { ...editingSubtask.subtask, destination: e.target.value }
                       })}
                       className="w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 focus:ring-2 focus:ring-primary transition-all text-sm font-bold focus:outline-none"
                     />
@@ -1731,11 +1762,11 @@ export function TaskList() {
                 </div>
               </div>
 
-              <div className="p-8 border-t border-surface-container flex gap-4 bg-surface-container-low/30">
+              <div className="p-8 border-t border-surface-container dark:border-slate-800 flex gap-4 bg-surface-container-low/30 dark:bg-slate-950/20">
                 <button 
                   type="button"
                   onClick={() => setEditingSubtask(null)}
-                  className="flex-1 py-4 px-6 border border-surface-container-high rounded-2xl font-bold text-sm hover:bg-surface-container active:scale-[0.98] transition-all"
+                  className="flex-1 py-4 px-6 border border-surface-container-high dark:border-slate-800 rounded-2xl font-bold text-sm text-on-surface-variant hover:text-on-surface dark:text-slate-300 dark:hover:text-slate-100 hover:bg-surface-container dark:hover:bg-slate-800 active:scale-[0.98] transition-all bg-white dark:bg-slate-900 cursor-pointer"
                 >
                   Cancelar
                 </button>
