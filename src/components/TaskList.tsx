@@ -956,9 +956,9 @@ export function TaskList() {
                     />
                   </th>
                 )}
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[200px] w-[250px]">Tarefa & SIGAD</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[280px] w-[350px]">Tarefa & SIGAD</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[150px] w-[160px]">Responsável</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[160px]">Status</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em] min-w-[120px] w-[130px]">Status</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em]">Datas</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em]">Prioridade</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.1em]">Progresso</th>
@@ -985,7 +985,7 @@ export function TaskList() {
                         />
                       </td>
                     )}
-                    <td className="px-6 py-6 min-w-[200px]">
+                    <td className="px-6 py-6 min-w-[280px]">
                       <div className="flex items-start gap-4">
                         <button 
                           onClick={() => toggleExpandTask(task.id)}
@@ -996,7 +996,7 @@ export function TaskList() {
                         <div className="space-y-1">
                           <p 
                             onClick={() => setEditingTask(task)}
-                            className="font-bold text-sm leading-tight text-primary group-hover:underline cursor-pointer break-words max-w-[200px]"
+                            className="font-bold text-sm leading-tight text-primary group-hover:underline cursor-pointer break-words max-w-[320px]"
                           >
                             {task.title}
                           </p>
@@ -1030,7 +1030,7 @@ export function TaskList() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-6 min-w-[160px] whitespace-nowrap">
+                    <td className="px-6 py-6 min-w-[120px] w-[130px] whitespace-nowrap">
                       <span className={cn(
                         "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm",
                         getStatusStyles(task.status)
@@ -1558,19 +1558,47 @@ export function TaskList() {
             >
               <ChevronLeft size={18} />
             </button>
-            <div className="flex gap-1">
-              {Array.from({ length: Math.max(1, Math.ceil(filteredTasks.length / itemsPerPage)) }, (_, i) => i + 1).map((p) => (
-                <button 
-                  key={p} 
-                  onClick={() => setCurrentPage(p)}
-                  className={cn(
-                    "w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all text-xs",
-                    p === currentPage ? "bg-primary text-on-primary shadow-xl scale-110" : "hover:bg-white bg-white/30 border border-transparent hover:border-surface-container-high"
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
+            <div className="flex gap-1 items-center">
+              {(() => {
+                const totalPages = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPage));
+                const pages: (number | string)[] = [];
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  if (currentPage > 4) pages.push('...');
+                  const start = Math.max(2, currentPage - 1);
+                  const end = Math.min(totalPages - 1, currentPage + 1);
+                  let adjStart = start;
+                  let adjEnd = end;
+                  if (currentPage <= 4) adjEnd = 5;
+                  if (currentPage >= totalPages - 3) adjStart = totalPages - 4;
+                  for (let i = adjStart; i <= adjEnd; i++) pages.push(i);
+                  if (currentPage < totalPages - 3) pages.push('...');
+                  pages.push(totalPages);
+                }
+                return pages;
+              })().map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-on-surface-variant/60 font-black text-xs">
+                      ...
+                    </span>
+                  );
+                }
+                return (
+                  <button 
+                    key={p} 
+                    onClick={() => setCurrentPage(p as number)}
+                    className={cn(
+                      "w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all text-xs",
+                      p === currentPage ? "bg-primary text-on-primary shadow-xl scale-110" : "hover:bg-white bg-white/30 border border-transparent hover:border-surface-container-high text-on-surface"
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
             </div>
             <button 
               onClick={() => setCurrentPage(prev => Math.min(Math.max(1, Math.ceil(filteredTasks.length / itemsPerPage)), prev + 1))}
