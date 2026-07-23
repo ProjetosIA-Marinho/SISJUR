@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { useData } from '../context/DataContext';
 import logoImage from '../login_logo.png';
 import { supabase } from '../lib/supabase';
+import { CustomSelect } from './CustomSelect';
 
 interface NavigationProps {
   currentView: ViewType;
@@ -110,27 +111,21 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
           ))}
 
           {/* Acesso Rápido Selector */}
-          <div className="relative flex items-center">
-            <select 
-              value={selectedLink}
-              onChange={(e) => {
-                const url = e.target.value;
-                if (url) {
-                  window.open(url, '_blank', 'noopener,noreferrer');
-                  setSelectedLink('');
-                }
-              }}
-              className="pl-5 pr-8 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all text-on-surface-variant hover:text-primary hover:bg-surface-container border border-transparent cursor-pointer bg-transparent focus:ring-0 focus:outline-none appearance-none"
-              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
-            >
-              <option value="" className="bg-surface-container-lowest text-on-surface-variant">Acesso Rápido</option>
-              <option value="https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507" className="bg-surface-container-lowest text-on-surface">Planilha Google</option>
-              <option value="https://gpatdafa.com" className="bg-surface-container-lowest text-on-surface">gpatdafa.com</option>
-            </select>
-            <div className="absolute right-3 pointer-events-none text-on-surface-variant/70">
-              <ExternalLink size={12} />
-            </div>
-          </div>
+          <CustomSelect
+            label=""
+            value=""
+            options={[
+              { value: '', label: 'Acesso Rápido', color: 'bg-slate-300 dark:bg-slate-700' },
+              { value: 'https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507', label: 'Planilha Google', color: 'bg-emerald-500' },
+              { value: 'https://gpatdafa.com', label: 'gpatdafa.com', color: 'bg-blue-500' }
+            ]}
+            onChange={(url) => {
+              if (url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }
+            }}
+            className="w-52 scale-90"
+          />
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-4">
@@ -145,7 +140,6 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
 
           {/* Online Members Avatars Stack */}
           <div className="hidden md:flex items-center -space-x-2 mr-2">
-            <span className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant/40 mr-2">Online: {team.filter(m => m.online).length}</span>
             {team.filter(m => m.online).slice(0, 4).map(m => (
               <div key={m.id} className="relative group cursor-pointer" title={`${m.name} está online`}>
                 <img 
