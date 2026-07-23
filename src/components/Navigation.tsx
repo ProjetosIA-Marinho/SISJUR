@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Columns3, ListTodo, GanttChartSquare, Calendar as CalendarIcon, BarChart3, Settings, Search, Bell, Menu, Sun, Moon, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Columns3, ListTodo, GanttChartSquare, Calendar as CalendarIcon, BarChart3, Settings, Search, Bell, Menu, Sun, Moon, Users, LogOut, ExternalLink } from 'lucide-react';
 import { ViewType, User } from '../types';
 import { cn } from '../lib/utils';
 import { useData } from '../context/DataContext';
@@ -16,6 +16,7 @@ interface NavigationProps {
 
 export function Navigation({ currentView, onViewChange, user, theme, onThemeToggle }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [selectedLink, setSelectedLink] = React.useState('');
   const { team } = useData();
 
   const [isNotifOpen, setIsNotifOpen] = React.useState(false);
@@ -140,6 +141,38 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
                 +{team.filter(m => m.online).length - 4}
               </div>
             )}
+          {/* Quick Link Selector */}
+          <div className="hidden lg:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full border border-surface-container-high">
+            <select 
+              value={selectedLink}
+              onChange={(e) => setSelectedLink(e.target.value)}
+              className="text-xs font-bold bg-transparent text-on-surface-variant border-none focus:ring-0 focus:outline-none cursor-pointer pr-2"
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
+            >
+              <option value="" className="bg-surface-container-lowest">Acesso Rápido...</option>
+              <option value="https://docs.google.com/spreadsheets" className="bg-surface-container-lowest">Planilha Google</option>
+              <option value="https://web.whatsapp.com" className="bg-surface-container-lowest">WhatsApp Web</option>
+              <option value="https://drive.google.com" className="bg-surface-container-lowest">Google Drive</option>
+              <option value="https://n8n.io" className="bg-surface-container-lowest">n8n Automação</option>
+            </select>
+            <button
+              onClick={() => {
+                if (selectedLink) {
+                  window.open(selectedLink, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              disabled={!selectedLink}
+              className={cn(
+                "p-1.5 rounded-full transition-all cursor-pointer",
+                selectedLink 
+                  ? "bg-primary text-on-primary hover:scale-105" 
+                  : "bg-surface-container text-on-surface-variant/30 cursor-not-allowed"
+              )}
+              title="Abrir link selecionado"
+            >
+              <ExternalLink size={12} />
+            </button>
+          </div>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
@@ -263,6 +296,40 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
               {item.label}
             </button>
           ))}
+
+          <div className="border-t border-surface-container-high pt-3 mt-3 space-y-2">
+            <p className="text-[10px] uppercase font-black tracking-widest text-on-surface-variant/40 px-4">Acesso Rápido</p>
+            <div className="flex gap-2 px-4">
+              <select 
+                value={selectedLink}
+                onChange={(e) => setSelectedLink(e.target.value)}
+                className="flex-grow text-xs font-bold bg-surface-container text-on-surface-variant px-3 py-2.5 rounded-xl border-none focus:ring-0 cursor-pointer"
+              >
+                <option value="">Selecione...</option>
+                <option value="https://docs.google.com/spreadsheets">Planilha Google</option>
+                <option value="https://web.whatsapp.com">WhatsApp Web</option>
+                <option value="https://drive.google.com">Google Drive</option>
+                <option value="https://n8n.io">n8n Automação</option>
+              </select>
+              <button
+                onClick={() => {
+                  if (selectedLink) {
+                    window.open(selectedLink, '_blank', 'noopener,noreferrer');
+                    setIsMobileMenuOpen(false);
+                  }
+                }}
+                disabled={!selectedLink}
+                className={cn(
+                  "p-3 rounded-xl transition-all flex items-center justify-center aspect-square cursor-pointer",
+                  selectedLink 
+                    ? "bg-primary text-on-primary" 
+                    : "bg-surface-container text-on-surface-variant/30 cursor-not-allowed"
+                )}
+              >
+                <ExternalLink size={16} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </header>
