@@ -114,6 +114,7 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
           <CustomSelect
             label=""
             value=""
+            variant="nav"
             options={[
               { value: '', label: 'Acesso Rápido', color: 'bg-slate-300 dark:bg-slate-700' },
               { value: 'https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507', label: 'Planilha Google', color: 'bg-emerald-500' },
@@ -124,7 +125,7 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
                 window.open(url, '_blank', 'noopener,noreferrer');
               }
             }}
-            className="w-52 scale-90"
+            className="w-48 py-0"
           />
         </nav>
 
@@ -148,13 +149,13 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
                     (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`;
                   }}
                   alt={m.name} 
-                  className="w-7 h-7 rounded-full border-2 border-surface-container-lowest dark:border-slate-900 object-cover hover:scale-110 hover:z-10 transition-all shadow-sm"
+                  className="w-9 h-9 rounded-full border-2 border-surface-container-lowest dark:border-slate-900 object-cover hover:scale-110 hover:z-10 transition-all shadow-sm"
                 />
-                <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border border-surface-container-lowest dark:border-slate-900"></span>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-surface-container-lowest dark:border-slate-900"></span>
               </div>
             ))}
             {team.filter(m => m.online).length > 4 && (
-              <div className="w-7 h-7 rounded-full bg-surface-container-high dark:bg-slate-800 text-on-surface-variant flex items-center justify-center text-[9px] font-black border-2 border-surface-container-lowest dark:border-slate-900 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-surface-container-high dark:bg-slate-800 text-on-surface-variant flex items-center justify-center text-[10px] font-black border-2 border-surface-container-lowest dark:border-slate-900 shadow-sm">
                 +{team.filter(m => m.online).length - 4}
               </div>
             )}
