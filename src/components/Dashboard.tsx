@@ -70,9 +70,9 @@ export function Dashboard() {
   });
 
   const sectorChartData = [
-    { name: 'AAJ', value: sectorCounts.AAJ, color: '#ffd666' }, 
-    { name: 'SIJ', value: sectorCounts.SIJ, color: '#8c8c8c' }, 
-    { name: 'AJUR', value: sectorCounts.AJUR, color: '#ffffff' } 
+    { name: 'AAJ', value: sectorCounts.AAJ, color: 'var(--color-secondary)' }, 
+    { name: 'SIJ', value: sectorCounts.SIJ, color: 'var(--color-outline)' }, 
+    { name: 'AJUR', value: sectorCounts.AJUR, color: 'var(--color-primary)' } 
   ];
 
   // Document type counts
@@ -340,14 +340,14 @@ export function Dashboard() {
         </div>
 
         {/* Sector Responsável Distribution Chart */}
-        <div className="rounded-[2rem] p-8 flex flex-col justify-between bg-[#1a1a1a] dark:bg-surface-container-lowest text-white border border-neutral-800 dark:border-surface-container-high lg:col-span-4 shadow-xl">
+        <div className="rounded-[2rem] p-8 flex flex-col justify-between bg-white dark:bg-surface-container-lowest text-on-surface border border-surface-container-high dark:border-surface-container-high lg:col-span-4 shadow-xl">
           <div>
             <div className="flex flex-col mb-8">
               <h4 className="text-xl font-bold flex items-center gap-2">
-                <Shield size={18} className="text-white" />
+                <Shield size={18} className="text-primary" />
                 Distribuição por Setor Responsável
               </h4>
-              <p className="text-xs text-neutral-400 mt-1">Carga de trabalho dividida entre AAJ, SIJ e AJUR ({selectedYear})</p>
+              <p className="text-xs text-on-surface-variant/75 mt-1">Carga de trabalho dividida entre AAJ, SIJ e AJUR ({selectedYear})</p>
             </div>
 
             <div className="h-[220px] w-full relative flex items-center justify-center">
@@ -369,10 +369,10 @@ export function Dashboard() {
                   <Tooltip
                     contentStyle={{
                       borderRadius: '1rem',
-                      border: '1px solid #404040',
-                      backgroundColor: '#262626',
-                      color: '#ffffff',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                      border: '1px solid var(--color-outline-variant)',
+                      backgroundColor: 'var(--color-surface-container-low)',
+                      color: 'var(--color-on-surface)',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
                       fontSize: '12px',
                       fontWeight: 'bold'
                     }}
@@ -380,20 +380,20 @@ export function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                <span className="text-3xl font-black text-white">{totalTasks}</span>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">Total</span>
+                <span className="text-3xl font-black text-on-surface">{totalTasks}</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant/75">Total</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-4 mt-8">
             {sectorChartData.map((d, i) => (
-              <div key={i} className="flex justify-between items-center px-4 py-2 bg-neutral-900 dark:bg-surface-container rounded-2xl border border-neutral-800 dark:border-surface-container-high">
+              <div key={i} className="flex justify-between items-center px-4 py-2 bg-surface-container/50 dark:bg-surface-container rounded-2xl border border-surface-container-high dark:border-surface-container-high">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
-                  <span className="text-xs font-bold text-neutral-300">{d.name}</span>
+                  <span className="text-xs font-bold text-on-surface-variant">{d.name}</span>
                 </div>
-                <span className="text-xs font-black text-white">
+                <span className="text-xs font-black text-on-surface">
                   {totalTasks > 0 ? Math.round((d.value / totalTasks) * 100) : 0}% ({d.value})
                 </span>
               </div>
