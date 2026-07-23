@@ -141,6 +141,8 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
                 +{team.filter(m => m.online).length - 4}
               </div>
             )}
+          </div>
+
           {/* Quick Link Selector */}
           <div className="hidden lg:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full border border-surface-container-high">
             <select 
@@ -150,10 +152,8 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
               style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
             >
               <option value="" className="bg-surface-container-lowest">Acesso Rápido...</option>
-              <option value="https://docs.google.com/spreadsheets" className="bg-surface-container-lowest">Planilha Google</option>
-              <option value="https://web.whatsapp.com" className="bg-surface-container-lowest">WhatsApp Web</option>
-              <option value="https://drive.google.com" className="bg-surface-container-lowest">Google Drive</option>
-              <option value="https://n8n.io" className="bg-surface-container-lowest">n8n Automação</option>
+              <option value="https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507" className="bg-surface-container-lowest">Planilha Google</option>
+              <option value="https://gpatdafa.com" className="bg-surface-container-lowest">gpatdafa.com</option>
             </select>
             <button
               onClick={() => {
@@ -172,7 +172,6 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
             >
               <ExternalLink size={12} />
             </button>
-          </div>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
@@ -306,10 +305,8 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
                 className="flex-grow text-xs font-bold bg-surface-container text-on-surface-variant px-3 py-2.5 rounded-xl border-none focus:ring-0 cursor-pointer"
               >
                 <option value="">Selecione...</option>
-                <option value="https://docs.google.com/spreadsheets">Planilha Google</option>
-                <option value="https://web.whatsapp.com">WhatsApp Web</option>
-                <option value="https://drive.google.com">Google Drive</option>
-                <option value="https://n8n.io">n8n Automação</option>
+                <option value="https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507">Planilha Google</option>
+                <option value="https://gpatdafa.com">gpatdafa.com</option>
               </select>
               <button
                 onClick={() => {
