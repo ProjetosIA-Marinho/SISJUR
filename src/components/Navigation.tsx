@@ -108,6 +108,29 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
               <span>{item.label}</span>
             </button>
           ))}
+
+          {/* Acesso Rápido Selector */}
+          <div className="relative flex items-center">
+            <select 
+              value={selectedLink}
+              onChange={(e) => {
+                const url = e.target.value;
+                if (url) {
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                  setSelectedLink('');
+                }
+              }}
+              className="pl-5 pr-8 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all text-on-surface-variant hover:text-primary hover:bg-surface-container border border-transparent cursor-pointer bg-transparent focus:ring-0 focus:outline-none appearance-none"
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
+            >
+              <option value="" className="bg-surface-container-lowest text-on-surface-variant">Acesso Rápido</option>
+              <option value="https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507" className="bg-surface-container-lowest text-on-surface">Planilha Google</option>
+              <option value="https://gpatdafa.com" className="bg-surface-container-lowest text-on-surface">gpatdafa.com</option>
+            </select>
+            <div className="absolute right-3 pointer-events-none text-on-surface-variant/70">
+              <ExternalLink size={12} />
+            </div>
+          </div>
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-4">
@@ -143,36 +166,7 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
             )}
           </div>
 
-          {/* Quick Link Selector */}
-          <div className="hidden lg:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full border border-surface-container-high">
-            <select 
-              value={selectedLink}
-              onChange={(e) => setSelectedLink(e.target.value)}
-              className="text-xs font-bold bg-transparent text-on-surface-variant border-none focus:ring-0 focus:outline-none cursor-pointer pr-2"
-              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
-            >
-              <option value="" className="bg-surface-container-lowest">Acesso Rápido...</option>
-              <option value="https://docs.google.com/spreadsheets/d/1J25Y0_OBHtvJrV5ngk_1e8siJtBEMTxWAAQ8Xs9zGEc/edit?gid=1097855507#gid=1097855507" className="bg-surface-container-lowest">Planilha Google</option>
-              <option value="https://gpatdafa.com" className="bg-surface-container-lowest">gpatdafa.com</option>
-            </select>
-            <button
-              onClick={() => {
-                if (selectedLink) {
-                  window.open(selectedLink, '_blank', 'noopener,noreferrer');
-                }
-              }}
-              disabled={!selectedLink}
-              className={cn(
-                "p-1.5 rounded-full transition-all cursor-pointer",
-                selectedLink 
-                  ? "bg-primary text-on-primary hover:scale-105" 
-                  : "bg-surface-container text-on-surface-variant/30 cursor-not-allowed"
-              )}
-              title="Abrir link selecionado"
-            >
-              <ExternalLink size={12} />
-            </button>
-          </div>
+
 
           <div className="flex items-center gap-1 sm:gap-2">
             <button 
