@@ -140,22 +140,22 @@ export function Navigation({ currentView, onViewChange, user, theme, onThemeTogg
           </div>
 
           {/* Online Members Avatars Stack */}
-          <div className="hidden md:flex items-center -space-x-2 mr-2">
+          <div className="hidden md:flex items-center -space-x-2 mr-2 flex-shrink-0">
             {team.filter(m => m.online).slice(0, 4).map(m => (
-              <div key={m.id} className="relative group cursor-pointer" title={`${m.name} está online`}>
+              <div key={m.id} className="relative w-9 h-9 group cursor-pointer flex-shrink-0" title={`${m.name} está online`}>
                 <img 
                   src={m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`} 
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random`;
                   }}
                   alt={m.name} 
-                  className="w-9 h-9 rounded-full border-2 border-surface-container-lowest dark:border-slate-900 object-cover hover:scale-110 hover:z-10 transition-all shadow-sm"
+                  className="w-full h-full rounded-full border-2 border-surface-container-lowest dark:border-slate-900 object-cover hover:scale-110 hover:z-10 transition-all shadow-sm"
                 />
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-surface-container-lowest dark:border-slate-900"></span>
               </div>
             ))}
             {team.filter(m => m.online).length > 4 && (
-              <div className="w-9 h-9 rounded-full bg-surface-container-high dark:bg-slate-800 text-on-surface-variant flex items-center justify-center text-[10px] font-black border-2 border-surface-container-lowest dark:border-slate-900 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-surface-container-high dark:bg-slate-800 text-on-surface-variant flex items-center justify-center text-[10px] font-black border-2 border-surface-container-lowest dark:border-slate-900 shadow-sm flex-shrink-0">
                 +{team.filter(m => m.online).length - 4}
               </div>
             )}
