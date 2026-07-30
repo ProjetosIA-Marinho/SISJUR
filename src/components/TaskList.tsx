@@ -840,11 +840,19 @@ export function TaskList() {
             <span className="text-sm font-bold">{selectedTasks.length} selecionadas</span>
             <div className="w-px h-6 bg-white/20" />
             <div className="flex gap-6 items-center">
-              <div className="flex items-center gap-1.5 hover:text-secondary-container transition-colors font-bold text-sm">
-                <Edit3 size={18} />
-                <select 
-                  onChange={(e) => {
-                    const status = e.target.value;
+              <div className="flex items-center gap-1.5 w-44 text-on-surface">
+                <CustomSelect
+                  label=""
+                  value=""
+                  options={[
+                    { value: '', label: 'Alterar Status', color: 'bg-slate-300 dark:bg-slate-700' },
+                    { value: 'not-started', label: 'Não Iniciada', color: 'bg-slate-400' },
+                    { value: 'in-progress', label: 'Em Andamento', color: 'bg-blue-500' },
+                    { value: 'completed', label: 'Concluída', color: 'bg-emerald-500' },
+                    { value: 'delayed', label: 'Atrasada', color: 'bg-red-500' },
+                    { value: 'suspended', label: 'Suspensa', color: 'bg-amber-500' },
+                  ]}
+                  onChange={(status) => {
                     if (status) {
                       let skippedCount = 0;
                       setTasks(prev => prev.map(t => {
@@ -866,22 +874,23 @@ export function TaskList() {
                       setSelectedTasks([]);
                     }
                   }}
-                  className="bg-primary text-white border-none p-0 focus:ring-0 font-bold text-sm cursor-pointer outline-none appearance-none"
-                  defaultValue=""
-                >
-                  <option value="" disabled className="bg-white text-black">Alterar Status</option>
-                  <option value="not-started" className="bg-white text-black">Não Iniciada</option>
-                  <option value="in-progress" className="bg-white text-black">Em Andamento</option>
-                  <option value="completed" className="bg-white text-black">Concluída</option>
-                  <option value="delayed" className="bg-white text-black">Atrasada</option>
-                  <option value="suspended" className="bg-white text-black">Suspensa</option>
-                </select>
+                  variant="nav"
+                />
               </div>
-              <div className="flex items-center gap-1.5 hover:text-secondary-container transition-colors font-bold text-sm">
-                <Clock size={18} />
-                <select 
-                  onChange={(e) => {
-                    const days = parseInt(e.target.value, 10);
+              <div className="flex items-center gap-1.5 w-40 text-on-surface">
+                <CustomSelect
+                  label=""
+                  value=""
+                  options={[
+                    { value: '', label: 'Adiar Prazo' },
+                    { value: '1', label: '+1 Dia' },
+                    { value: '3', label: '+3 Dias' },
+                    { value: '7', label: '+7 Dias' },
+                    { value: '15', label: '+15 Dias' },
+                    { value: '30', label: '+30 Dias' },
+                  ]}
+                  onChange={(val) => {
+                    const days = parseInt(val, 10);
                     if (days) {
                       setTasks(prev => prev.map(t => {
                         if (selectedTasks.includes(t.id) && t.dueDate) {
@@ -895,16 +904,8 @@ export function TaskList() {
                       setSelectedTasks([]);
                     }
                   }}
-                  className="bg-primary text-white border-none p-0 focus:ring-0 font-bold text-sm cursor-pointer outline-none appearance-none"
-                  defaultValue=""
-                >
-                  <option value="" disabled className="bg-white text-black">Adiar Prazo</option>
-                  <option value="1" className="bg-white text-black">+1 Dia</option>
-                  <option value="3" className="bg-white text-black">+3 Dias</option>
-                  <option value="7" className="bg-white text-black">+7 Dias</option>
-                  <option value="15" className="bg-white text-black">+15 Dias</option>
-                  <option value="30" className="bg-white text-black">+30 Dias</option>
-                </select>
+                  variant="nav"
+                />
               </div>
               <button 
                 onClick={handleBulkDelete}
