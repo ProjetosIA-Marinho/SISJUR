@@ -16,9 +16,10 @@ interface CustomSelectProps {
   onChange: (value: string) => void;
   className?: string;
   variant?: 'default' | 'modal' | 'nav';
+  openDirection?: 'up' | 'down';
 }
 
-export function CustomSelect({ label, value, options, onChange, className, variant = 'default' }: CustomSelectProps) {
+export function CustomSelect({ label, value, options, onChange, className, variant = 'default', openDirection = 'down' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -94,7 +95,12 @@ export function CustomSelect({ label, value, options, onChange, className, varia
 
       {/* Floating Options Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-[#1E293B]/70 rounded-[1.5rem] shadow-2xl z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className={cn(
+          "absolute left-0 right-0 bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-[#1E293B]/70 rounded-[1.5rem] shadow-2xl z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar duration-150",
+          openDirection === 'up'
+            ? "bottom-full mb-2 animate-in fade-in slide-in-from-bottom-2"
+            : "top-full mt-2 animate-in fade-in slide-in-from-top-2"
+        )}>
           {options.map((option) => {
             const isSelected = option.value === value;
             return (

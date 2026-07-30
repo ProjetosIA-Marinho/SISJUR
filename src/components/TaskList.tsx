@@ -875,6 +875,7 @@ export function TaskList() {
                     }
                   }}
                   variant="nav"
+                  openDirection="up"
                 />
               </div>
               <div className="flex items-center gap-1.5 w-40 text-on-surface">
@@ -905,6 +906,7 @@ export function TaskList() {
                     }
                   }}
                   variant="nav"
+                  openDirection="up"
                 />
               </div>
               <button 
