@@ -117,7 +117,27 @@ export function TaskList() {
   const [sortOrder, setSortOrder] = React.useState<'desc' | 'asc'>('desc');
 
   // States for subtasks / related tasks management
-  const [quickSubtaskForms, setQuickSubtaskForms] = React.useState<Record<string, { title: string, assigneeId: string, status: string, entryDate: string, expeditedDate: string, sigadOfExp: string, dueDate: string }>>({});
+  const [quickSubtaskForms, setQuickSubtaskForms] = React.useState<Record<string, { title: string, assigneeId: string, status: string, entryDate: string, expeditedDate: string, sigadOfExp: string, dueDate: string, destination: string, documentType: string }>>({});
+  const docTypesList = React.useMemo(() => {
+    const saved = localStorage.getItem('sisjur_doc_types');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { value: 'Ofício', label: 'Ofício' },
+      { value: 'Estudo', label: 'Estudo' },
+      { value: 'E-mail', label: 'E-mail' },
+      { value: 'Portaria', label: 'Portaria' },
+      { value: 'IPM', label: 'IPM' },
+      { value: 'APF', label: 'APF' },
+      { value: 'Sindicância', label: 'Sindicância' },
+      { value: 'Demanda Judicial', label: 'Demanda Judicial' },
+      { value: 'Armamento', label: 'Armamento' },
+      { value: 'Outros', label: 'Outros' },
+    ];
+  }, []);
   const [editingSubtask, setEditingSubtask] = React.useState<{ mainTaskId: string, subtask: Task } | null>(null);
   const [selectedSubtasks, setSelectedSubtasks] = React.useState<Record<string, string[]>>({});
   const [selectedDrawerTaskId, setSelectedDrawerTaskId] = React.useState<string | null>(null);
@@ -1188,50 +1208,52 @@ export function TaskList() {
                             {/* Quick Add Inline Form */}
                             <form 
                               onSubmit={(e) => {
-                                e.preventDefault();
-                                const form = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
-                                if (!form.title.trim()) return;
+                                 e.preventDefault();
+                                 const form = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
+                                 if (!form.title.trim()) return;
 
-                                const newSub: Task = {
-                                  id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                                  title: form.title,
-                                  status: form.status as any,
-                                  priority: 'medium',
-                                  dueDate: task.dueDate || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
-                                  entryDate: form.entryDate || new Date().toISOString().split('T')[0],
-                                  expeditedDate: form.expeditedDate || '',
-                                  sigadOfExp: form.sigadOfExp || '',
-                                  destination: form.destination || '',
-                                  assignee: TEAM.find(t => t.id === form.assigneeId) || USER_ME,
-                                  progress: form.status === 'completed' ? 100 : form.status === 'in-progress' ? 50 : 0,
-                                  subtasks: [],
-                                };
+                                 const newSub: Task = {
+                                   id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                                   title: form.title,
+                                   status: form.status as any,
+                                   priority: 'medium',
+                                   dueDate: task.dueDate || new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0],
+                                   entryDate: form.entryDate || new Date().toISOString().split('T')[0],
+                                   expeditedDate: form.expeditedDate || '',
+                                   sigadOfExp: form.sigadOfExp || '',
+                                   destination: form.destination || '',
+                                   documentType: form.documentType || 'Ofício',
+                                   assignee: TEAM.find(t => t.id === form.assigneeId) || USER_ME,
+                                   progress: form.status === 'completed' ? 100 : form.status === 'in-progress' ? 50 : 0,
+                                   subtasks: [],
+                                 };
 
-                                setTasks(prev => prev.map(t => {
-                                  if (t.id === task.id) {
-                                    return {
-                                      ...t,
-                                      subtasks: [...(t.subtasks || []), newSub]
-                                    };
-                                  }
-                                  return t;
-                                }));
+                                 setTasks(prev => prev.map(t => {
+                                   if (t.id === task.id) {
+                                     return {
+                                       ...t,
+                                       subtasks: [...(t.subtasks || []), newSub]
+                                     };
+                                   }
+                                   return t;
+                                 }));
 
-                                // Reset form
-                                setQuickSubtaskForms(prev => ({
-                                  ...prev,
-                                  [task.id]: {
-                                    title: '',
-                                    assigneeId: USER_ME.id,
-                                    status: 'not-started',
-                                    entryDate: new Date().toISOString().split('T')[0],
-                                    expeditedDate: '',
-                                    sigadOfExp: '',
-                                    dueDate: '',
-                                    destination: ''
-                                  }
-                                }));
-                              }}
+                                 // Reset form
+                                 setQuickSubtaskForms(prev => ({
+                                   ...prev,
+                                   [task.id]: {
+                                     title: '',
+                                     assigneeId: USER_ME.id,
+                                     status: 'not-started',
+                                     entryDate: new Date().toISOString().split('T')[0],
+                                     expeditedDate: '',
+                                     sigadOfExp: '',
+                                     dueDate: '',
+                                     destination: '',
+                                     documentType: 'Ofício'
+                                   }
+                                 }));
+                               }}
                               className="bg-surface-container-low/40 p-4 rounded-3xl border border-surface-container-high/40 grid grid-cols-1 md:grid-cols-12 gap-3 items-end shadow-sm"
                             >
                               {/* Row 1 */}
@@ -1298,7 +1320,7 @@ export function TaskList() {
                                   placeholder="Ex: 531630"
                                   value={quickSubtaskForms[task.id]?.sigadOfExp || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, sigadOfExp: e.target.value }
@@ -1307,14 +1329,32 @@ export function TaskList() {
                                   className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
-                              <div className="md:col-span-3 space-y-1">
+                              <div className="md:col-span-2 space-y-1">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Tipo de Doc</label>
+                                <select
+                                  value={quickSubtaskForms[task.id]?.documentType || 'Ofício'}
+                                  onChange={e => {
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
+                                    setQuickSubtaskForms({
+                                      ...quickSubtaskForms,
+                                      [task.id]: { ...curr, documentType: e.target.value }
+                                    });
+                                  }}
+                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-2 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none appearance-none pr-6 cursor-pointer"
+                                >
+                                  {docTypesList.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Destino</label>
                                 <input 
                                   type="text"
-                                  placeholder="Ex: AJUR ou DIRENS"
+                                  placeholder="Ex: AJUR"
                                   value={quickSubtaskForms[task.id]?.destination || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, destination: e.target.value }
@@ -1329,7 +1369,7 @@ export function TaskList() {
                                   type="date" 
                                   value={quickSubtaskForms[task.id]?.entryDate || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, entryDate: e.target.value }
@@ -1344,7 +1384,7 @@ export function TaskList() {
                                   type="date"
                                   value={quickSubtaskForms[task.id]?.expeditedDate || ''}
                                   onChange={e => {
-                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '' };
+                                    const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
                                       [task.id]: { ...curr, expeditedDate: e.target.value }
@@ -1353,10 +1393,10 @@ export function TaskList() {
                                   className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
-                              <div className="md:col-span-3">
+                              <div className="md:col-span-2">
                                 <button
                                   type="submit"
-                                  className="w-full bg-primary text-on-primary py-2 px-3 rounded-xl font-bold text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/15"
+                                  className="w-full bg-primary text-on-primary py-2.5 px-3 rounded-xl font-bold text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1 shadow-md shadow-primary/15 cursor-pointer"
                                 >
                                   <Plus size={14} />
                                   Criar
