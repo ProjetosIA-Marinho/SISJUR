@@ -35,6 +35,11 @@ export function TaskList() {
       const prevTask = tasks.find(lt => lt.id === nt.id);
       if (!prevTask) {
         await addTask(nt);
+        if (nt.subtasks && nt.subtasks.length > 0) {
+          for (const nst of nt.subtasks) {
+            await addTask({ ...nst, parentId: nt.id });
+          }
+        }
       } else {
         const fieldsChanged = (
           prevTask.title !== nt.title ||
@@ -690,19 +695,19 @@ export function TaskList() {
               <FileUp size={18} />
               Importar
             </button>
-            <div className="absolute right-0 top-full mt-2 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-surface-container-high dark:border-slate-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 p-2">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#0B1220] rounded-[1.5rem] shadow-xl border border-slate-200 dark:border-[#1E293B]/70 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-2 flex flex-col gap-1">
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full text-left px-4 py-2 hover:bg-surface-container rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5"
+                className="w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 rounded-full text-sm font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer flex items-center gap-2"
               >
-                <FileUp size={14} />
+                <FileUp size={16} />
                 Upload Planilha (CSV / XLS)
               </button>
               <button 
                 onClick={() => setShowTemplateModal(true)}
-                className="w-full text-left px-4 py-2 hover:bg-surface-container rounded-xl text-xs font-bold cursor-pointer text-primary flex items-center gap-1.5 border-t border-surface-container-high/40 mt-1 pt-2"
+                className="w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 rounded-full text-sm font-bold text-primary dark:text-amber-400 transition-all cursor-pointer flex items-center gap-2 border-t border-slate-100 dark:border-slate-800/60 mt-1 pt-3"
               >
-                <Info size={14} className="text-secondary" />
+                <Info size={16} className="text-secondary dark:text-amber-400" />
                 Ver Modelo de Planilha
               </button>
             </div>
@@ -919,22 +924,22 @@ export function TaskList() {
                 <FileDown size={16} />
                 Exportar Dados
               </button>
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-surface-container-high dark:border-slate-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 p-2">
+              <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#0B1220] rounded-[1.5rem] shadow-xl border border-slate-200 dark:border-[#1E293B]/70 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-2 flex flex-col gap-1">
                 <button 
                   onClick={() => handleExport('xls')} 
-                  className="w-full text-left px-4 py-2 hover:bg-surface-container rounded-xl text-xs font-bold cursor-pointer block"
+                  className="w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 rounded-full text-sm font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer block"
                 >
                   XLSX (Excel)
                 </button>
                 <button 
                   onClick={() => handleExport('csv')} 
-                  className="w-full text-left px-4 py-2 hover:bg-surface-container rounded-xl text-xs font-bold cursor-pointer block"
+                  className="w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 rounded-full text-sm font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer block"
                 >
                   CSV (Delimitado)
                 </button>
                 <button 
                   onClick={() => handleExport('pdf')} 
-                  className="w-full text-left px-4 py-2 hover:bg-surface-container rounded-xl text-xs font-bold cursor-pointer block"
+                  className="w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 rounded-full text-sm font-bold text-slate-800 dark:text-slate-200 transition-all cursor-pointer block"
                 >
                   PDF Relatório
                 </button>

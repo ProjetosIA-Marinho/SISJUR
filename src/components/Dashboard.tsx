@@ -281,11 +281,21 @@ export function Dashboard() {
                   <BarChart data={weeklyChartData} barGap={8}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-outline-variant)" opacity={0.3} />
                     <XAxis 
-                      dataKey="name" 
+                      dataKey="fullName" 
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fontSize: 12, fill: 'var(--color-on-surface-variant)' }} 
                       dy={10} 
+                      tickFormatter={(value) => {
+                        if (value === 'Domingo') return 'D';
+                        if (value === 'Segunda-feira') return 'S';
+                        if (value === 'Terça-feira') return 'T';
+                        if (value === 'Quarta-feira') return 'Q';
+                        if (value === 'Quinta-feira') return 'Q';
+                        if (value === 'Sexta-feira') return 'S';
+                        if (value === 'Sábado') return 'S';
+                        return value;
+                      }}
                     />
                     <YAxis 
                       axisLine={false} 
@@ -466,7 +476,7 @@ export function Dashboard() {
                 { key: 'urgent', label: 'Urgente', count: priorityCounts.urgent, color: 'bg-red-500', text: 'text-red-600 dark:text-red-400', bgLight: 'bg-red-500/10 dark:bg-red-500/20' },
                 { key: 'high', label: 'Alta', count: priorityCounts.high, color: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-400', bgLight: 'bg-orange-500/10 dark:bg-orange-500/20' },
                 { key: 'medium', label: 'Média', count: priorityCounts.medium, color: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', bgLight: 'bg-amber-500/10 dark:bg-amber-500/20' },
-                { key: 'low', label: 'Baixa', count: priorityCounts.low, color: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bgLight: 'bg-emerald-500/10 dark:bg-emerald-500/20' },
+                { key: 'low', label: 'Rotina (Baixa)', count: priorityCounts.low, color: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bgLight: 'bg-emerald-500/10 dark:bg-emerald-500/20' },
               ].map(item => {
                 const percent = totalTasks > 0 ? Math.round((item.count / totalTasks) * 100) : 0;
                 return (

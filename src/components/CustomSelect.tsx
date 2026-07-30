@@ -92,7 +92,7 @@ export function CustomSelect({ label, value, options, onChange, className, varia
 
       {/* Floating Options Menu */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-2xl z-50 py-3 flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-[#1E293B]/70 rounded-[1.5rem] shadow-2xl z-50 p-2 flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-150">
           {options.map((option) => {
             const isSelected = option.value === value;
             return (
@@ -100,8 +100,8 @@ export function CustomSelect({ label, value, options, onChange, className, varia
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  "flex items-center justify-between px-5 py-3.5 hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer transition-all rounded-[1.25rem] mx-2 text-sm font-bold",
-                  isSelected ? "bg-slate-50 dark:bg-slate-855 text-primary dark:text-amber-400" : "text-slate-700 dark:text-slate-200"
+                  "flex items-center justify-between px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 dark:hover:text-white cursor-pointer transition-all rounded-full mx-1 text-sm font-bold",
+                  isSelected ? "bg-slate-100 dark:bg-[#1C2541]/70 text-primary dark:text-white" : "text-slate-700 dark:text-slate-200"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -122,7 +122,7 @@ export function CustomSelect({ label, value, options, onChange, className, varia
                 </div>
                 {/* ChevronRight on the selected option */}
                 {isSelected && (
-                  <ChevronRight size={18} className="text-primary dark:text-amber-400 animate-pulse" />
+                  <ChevronRight size={18} className="text-primary dark:text-white animate-pulse" />
                 )}
               </div>
             );

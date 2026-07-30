@@ -244,20 +244,26 @@ export function Reports() {
               <ChevronDown size={14} />
             </button>
             {showAccessDropdown && (
-              <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-surface-container-high dark:border-slate-800 rounded-2xl shadow-xl z-30 py-2">
+              <div className="absolute left-0 mt-2 w-52 bg-white dark:bg-[#0B1220] rounded-[1.5rem] shadow-xl border border-slate-200 dark:border-[#1E293B]/70 z-30 p-2 flex flex-col gap-1">
                 {[
                   { id: 'todos', label: 'Todos Níveis' },
                   { id: 'admin', label: 'Administrador' },
                   { id: 'militar', label: 'Militar' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setAccessFilter(opt.id as any)}
-                    className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs font-bold text-on-surface cursor-pointer"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map(opt => {
+                  const isSelected = opt.id === accessFilter;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setAccessFilter(opt.id as any)}
+                      className={cn(
+                        "w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 dark:hover:text-white rounded-full text-sm font-bold transition-all cursor-pointer",
+                        isSelected ? "bg-slate-100 dark:bg-[#1C2541]/70 text-primary dark:text-white" : "text-slate-800 dark:text-slate-200"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -276,20 +282,26 @@ export function Reports() {
               <ChevronDown size={14} />
             </button>
             {showStatusDropdown && (
-              <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-surface-container-high dark:border-slate-800 rounded-2xl shadow-xl z-30 py-2">
+              <div className="absolute left-0 mt-2 w-52 bg-white dark:bg-[#0B1220] rounded-[1.5rem] shadow-xl border border-slate-200 dark:border-[#1E293B]/70 z-30 p-2 flex flex-col gap-1">
                 {[
                   { id: 'todos', label: 'Todos Status' },
                   { id: 'ativos', label: 'Ativos (Online)' },
                   { id: 'ausentes', label: 'Inativos (Offline)' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setStatusFilter(opt.id as any)}
-                    className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs font-bold text-on-surface cursor-pointer"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map(opt => {
+                  const isSelected = opt.id === statusFilter;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setStatusFilter(opt.id as any)}
+                      className={cn(
+                        "w-full text-left px-5 py-3 hover:bg-slate-100 dark:hover:bg-[#1C2541]/70 dark:hover:text-white rounded-full text-sm font-bold transition-all cursor-pointer",
+                        isSelected ? "bg-slate-100 dark:bg-[#1C2541]/70 text-primary dark:text-white" : "text-slate-800 dark:text-slate-200"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
