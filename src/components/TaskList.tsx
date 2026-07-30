@@ -1274,42 +1274,46 @@ export function TaskList() {
                                   className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
-                              <div className="md:col-span-3 space-y-1">
+                              <div className="md:col-span-3 space-y-1 relative z-50">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Responsável</label>
-                                <select
+                                <CustomSelect
+                                  label=""
                                   value={quickSubtaskForms[task.id]?.assigneeId || USER_ME.id}
-                                  onChange={e => {
+                                  options={[
+                                    { value: USER_ME.id, label: USER_ME.name, avatar: USER_ME.avatar },
+                                    ...TEAM.map(m => ({ value: m.id, label: m.name, avatar: m.avatar }))
+                                  ]}
+                                  onChange={val => {
                                     const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
-                                      [task.id]: { ...curr, assigneeId: e.target.value }
+                                      [task.id]: { ...curr, assigneeId: val }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-2 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none appearance-none pr-6"
-                                >
-                                  <option value={USER_ME.id}>{USER_ME.name}</option>
-                                  {TEAM.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                </select>
+                                  variant="nav"
+                                />
                               </div>
-                              <div className="md:col-span-3 space-y-1">
+                              <div className="md:col-span-3 space-y-1 relative z-50">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Status</label>
-                                <select
+                                <CustomSelect
+                                  label=""
                                   value={quickSubtaskForms[task.id]?.status || 'not-started'}
-                                  onChange={e => {
+                                  options={[
+                                    { value: 'not-started', label: 'Não Iniciada', color: 'bg-slate-400' },
+                                    { value: 'in-progress', label: 'Em Andamento', color: 'bg-blue-500' },
+                                    { value: 'completed', label: 'Concluída', color: 'bg-emerald-500' },
+                                    { value: 'delayed', label: 'Atrasada', color: 'bg-red-500' },
+                                    { value: 'suspended', label: 'Suspensa', color: 'bg-amber-500' },
+                                  ]}
+                                  onChange={val => {
                                     const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
-                                      [task.id]: { ...curr, status: e.target.value }
+                                      [task.id]: { ...curr, status: val }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-2 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none appearance-none pr-6"
-                                >
-                                  <option value="not-started">Não Iniciada</option>
-                                  <option value="in-progress">Em Andamento</option>
-                                  <option value="completed">Concluída</option>
-                                  <option value="delayed">Atrasada</option>
-                                  <option value="suspended">Suspensa</option>
-                                </select>
+                                  variant="nav"
+                                />
                               </div>
 
                               {/* Row 2 */}
@@ -1326,26 +1330,24 @@ export function TaskList() {
                                       [task.id]: { ...curr, sigadOfExp: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2.5 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
-                              <div className="md:col-span-2 space-y-1">
+                              <div className="md:col-span-2 space-y-1 relative z-40">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Tipo de Doc</label>
-                                <select
+                                <CustomSelect
+                                  label=""
                                   value={quickSubtaskForms[task.id]?.documentType || 'Ofício'}
-                                  onChange={e => {
+                                  options={docTypesList}
+                                  onChange={val => {
                                     const curr = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                     setQuickSubtaskForms({
                                       ...quickSubtaskForms,
-                                      [task.id]: { ...curr, documentType: e.target.value }
+                                      [task.id]: { ...curr, documentType: val }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-2 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none appearance-none pr-6 cursor-pointer"
-                                >
-                                  {docTypesList.map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                  ))}
-                                </select>
+                                  variant="nav"
+                                />
                               </div>
                               <div className="md:col-span-2 space-y-1">
                                 <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Destino</label>
