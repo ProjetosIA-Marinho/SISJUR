@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { TaskFilters } from './TaskFilters';
 import { TaskForm } from './TaskForm';
 import { Task } from '../types';
+import { CustomSelect } from './CustomSelect';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -1372,11 +1373,19 @@ export function TaskList() {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
                                   {/* Bulk Status Select */}
-                                  <div className="flex items-center gap-1.5 bg-white border border-surface-container-high rounded-xl px-2 py-1 shadow-sm">
-                                    <span className="text-[9px] font-black uppercase text-on-surface-variant/70">Status:</span>
-                                    <select
-                                      onChange={(e) => {
-                                        const status = e.target.value;
+                                  <div className="flex items-center gap-1.5 w-48 relative z-50">
+                                    <CustomSelect
+                                      label=""
+                                      value=""
+                                      options={[
+                                        { value: '', label: 'Alterar Status', color: 'bg-slate-300 dark:bg-slate-700' },
+                                        { value: 'not-started', label: 'Não Iniciada', color: 'bg-slate-400' },
+                                        { value: 'in-progress', label: 'Em Andamento', color: 'bg-blue-500' },
+                                        { value: 'completed', label: 'Concluída', color: 'bg-emerald-500' },
+                                        { value: 'delayed', label: 'Atrasada', color: 'bg-red-500' },
+                                        { value: 'suspended', label: 'Suspensa', color: 'bg-amber-500' },
+                                      ]}
+                                      onChange={(status) => {
                                         if (status) {
                                           const selIds = selectedSubtasks[task.id] || [];
                                           setTasks(prev => prev.map(t => {
@@ -1396,16 +1405,8 @@ export function TaskList() {
                                           setSelectedSubtasks(prev => ({ ...prev, [task.id]: [] }));
                                         }
                                       }}
-                                      className="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer outline-none p-0 pr-6"
-                                      defaultValue=""
-                                    >
-                                      <option value="" disabled>Alterar Status</option>
-                                      <option value="not-started">Não Iniciada</option>
-                                      <option value="in-progress">Em Andamento</option>
-                                      <option value="completed">Concluída</option>
-                                      <option value="delayed">Atrasada</option>
-                                      <option value="suspended">Suspensa</option>
-                                    </select>
+                                      variant="nav"
+                                    />
                                   </div>
 
                                   {/* Bulk Expedited Date Input */}
