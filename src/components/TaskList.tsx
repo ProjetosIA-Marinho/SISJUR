@@ -1149,7 +1149,7 @@ export function TaskList() {
                         exit={{ opacity: 0, height: 0 }}
                         className="bg-surface-container-low/20"
                       >
-                        <td colSpan={bulkEditMode ? 8 : 7} className="px-12 py-0 overflow-hidden">
+                        <td colSpan={bulkEditMode ? 8 : 7} className="px-12 py-0">
                           <div className="py-6 border-l-4 border-primary/20 space-y-4 pl-8">
                             
                             {/* Header row */}

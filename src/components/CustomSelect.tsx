@@ -57,7 +57,7 @@ export function CustomSelect({ label, value, options, onChange, className, varia
           variant === 'modal' 
             ? "bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3.5 px-5 text-slate-850 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-800 text-sm font-bold"
             : variant === 'nav'
-              ? "bg-surface-container-low dark:bg-slate-800/40 border border-surface-container-high dark:border-slate-800/60 rounded-full py-2 px-4 text-on-surface-variant hover:text-primary hover:bg-surface-container text-xs font-bold uppercase tracking-wider shadow-sm"
+              ? "bg-surface-container-low dark:bg-slate-800/40 border border-surface-container-high dark:border-slate-800/60 rounded-full py-2 px-4 text-on-surface-variant hover:text-primary hover:bg-surface-container text-sm font-bold shadow-sm"
               : "bg-surface-container-low/50 dark:bg-slate-855 border border-surface-container-high dark:border-slate-800 rounded-[1.5rem] py-4 px-6 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-800 shadow-sm text-sm font-bold",
           isOpen && "ring-2 ring-primary border-primary"
         )}
@@ -71,13 +71,15 @@ export function CustomSelect({ label, value, options, onChange, className, varia
               className={cn("rounded-full object-cover border border-white dark:border-slate-800 shadow-sm", variant === 'nav' ? "w-4.5 h-4.5" : "w-7 h-7")}
             />
           ) : (
-            <div className={cn(
-              "rounded-full bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center",
-              variant === 'nav' ? "w-2.5 h-2.5" : "w-7 h-7",
-              selectedOption?.color
-            )} />
+            selectedOption?.color ? (
+              <div className={cn(
+                "rounded-full flex-shrink-0",
+                variant === 'nav' ? "w-2.5 h-2.5" : "w-3 h-3",
+                selectedOption.color
+              )} />
+            ) : null
           )}
-          <span className={cn("font-bold", variant === 'nav' ? "text-xs tracking-wider" : "text-sm text-slate-800 dark:text-slate-100")}>
+          <span className={cn("font-bold text-sm", variant === 'nav' ? "text-slate-800 dark:text-slate-200" : "text-slate-800 dark:text-slate-100")}>
             {selectedOption?.label || value}
           </span>
         </div>
@@ -110,13 +112,16 @@ export function CustomSelect({ label, value, options, onChange, className, varia
                     <img
                       src={option.avatar}
                       alt={option.label}
-                      className="w-7 h-7 rounded-full object-cover border border-white dark:border-slate-800 shadow-sm"
+                      className={cn("rounded-full object-cover border border-white dark:border-slate-800 shadow-sm", variant === 'nav' ? "w-4 h-4" : "w-7 h-7")}
                     />
                   ) : (
-                    <div className={cn(
-                      "w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex-shrink-0",
-                      option.color
-                    )} />
+                    option.color ? (
+                      <div className={cn(
+                        "rounded-full flex-shrink-0",
+                        variant === 'nav' ? "w-2.5 h-2.5" : "w-3 h-3",
+                        option.color
+                      )} />
+                    ) : null
                   )}
                   <span>{option.label}</span>
                 </div>
