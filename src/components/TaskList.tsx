@@ -139,6 +139,14 @@ export function TaskList() {
     ];
   }, []);
   const [editingSubtask, setEditingSubtask] = React.useState<{ mainTaskId: string, subtask: Task } | null>(null);
+  const [modalIsSameDueDate, setModalIsSameDueDate] = React.useState(true);
+
+  React.useEffect(() => {
+    if (editingSubtask) {
+      const mainTask = tasks.find(t => t.id === editingSubtask.mainTaskId);
+      setModalIsSameDueDate(editingSubtask.subtask.dueDate === mainTask?.dueDate);
+    }
+  }, [editingSubtask, tasks]);
   const [selectedSubtasks, setSelectedSubtasks] = React.useState<Record<string, string[]>>({});
   const [selectedDrawerTaskId, setSelectedDrawerTaskId] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -576,8 +584,12 @@ export function TaskList() {
       if (activeFilters.priority && task.priority !== activeFilters.priority) {
         return false;
       }
-      if (activeFilters.assignee && task.assignee?.id !== activeFilters.assignee) {
-        return false;
+      if (activeFilters.assignee) {
+        const matchesMain = task.assignee?.id === activeFilters.assignee;
+        const matchesSubtasks = task.subtasks?.some(st => st.assignee?.id === activeFilters.assignee);
+        if (!matchesMain && !matchesSubtasks) {
+          return false;
+        }
       }
       if (activeFilters.documentType && task.documentType !== activeFilters.documentType) {
         return false;
@@ -1176,7 +1188,7 @@ export function TaskList() {
                           <div className="py-6 border-l-4 border-primary/20 space-y-4 pl-8">
                             
                             {/* Header row */}
-                            <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant/70 border-b border-surface-container h-12 px-4 uppercase tracking-widest">
+                            <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant/70 dark:text-slate-300 border-b border-surface-container dark:border-slate-800 h-12 px-4 uppercase tracking-widest">
                               <div className="flex items-center gap-3">
                                 {task.subtasks && task.subtasks.length > 0 && (
                                   <input 
@@ -1274,7 +1286,7 @@ export function TaskList() {
                                       [task.id]: { ...curr, title: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white dark:bg-slate-800 dark:text-white border border-surface-container-high dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
                               <div className="md:col-span-3 space-y-1 relative z-50">
@@ -1333,7 +1345,7 @@ export function TaskList() {
                                       [task.id]: { ...curr, sigadOfExp: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2.5 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white dark:bg-slate-800 dark:text-white border border-surface-container-high dark:border-slate-700 rounded-xl py-2.5 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
                               <div className="md:col-span-2 space-y-1 relative z-40">
@@ -1365,7 +1377,7 @@ export function TaskList() {
                                       [task.id]: { ...curr, destination: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white dark:bg-slate-800 dark:text-white border border-surface-container-high dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
                               <div className="md:col-span-2 space-y-1">
@@ -1380,7 +1392,7 @@ export function TaskList() {
                                       [task.id]: { ...curr, entryDate: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white dark:bg-slate-800 dark:text-white border border-surface-container-high dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
                               <div className="md:col-span-2 space-y-1">
@@ -1395,7 +1407,7 @@ export function TaskList() {
                                       [task.id]: { ...curr, expeditedDate: e.target.value }
                                     });
                                   }}
-                                  className="w-full bg-white border border-surface-container-high rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
+                                  className="w-full bg-white dark:bg-slate-800 dark:text-white border border-surface-container-high dark:border-slate-700 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary focus:outline-none"
                                 />
                               </div>
                               <div className="md:col-span-2">
@@ -1526,7 +1538,7 @@ export function TaskList() {
                                             <span className="text-[9px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded uppercase font-sans">RELACIONADA</span>
                                             <span className="font-bold text-sm text-on-surface">{st.title}</span>
                                           </div>
-                                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-on-surface-variant/70 font-bold">
+                                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-on-surface-variant/70 dark:text-slate-300 font-bold">
                                             {st.sigadOfExp && <span><strong>Sigad Exp:</strong> {st.sigadOfExp}</span>}
                                             {st.entryDate && <span><strong>Data Entrada:</strong> {st.entryDate.split('-').reverse().join('/')}</span>}
                                             {st.expeditedDate && <span><strong>Data Exp:</strong> {st.expeditedDate.split('-').reverse().join('/')}</span>}
@@ -1538,7 +1550,7 @@ export function TaskList() {
                                           {st.assignee && (
                                             <>
                                               <img src={st.assignee.avatar} className="w-6 h-6 rounded-full border border-white shadow-sm" alt="" />
-                                              <span className="text-xs font-bold text-on-surface-variant">{st.assignee.name}</span>
+                                              <span className="text-xs font-bold text-on-surface-variant dark:text-slate-200">{st.assignee.name}</span>
                                             </>
                                           )}
                                         </div>
@@ -1800,12 +1812,39 @@ export function TaskList() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant ml-2">Prazo (Igual à Principal)</label>
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <input
+                        type="checkbox"
+                        id="modalSameDueDate"
+                        checked={modalIsSameDueDate}
+                        onChange={e => {
+                          const mainDueDate = tasks.find(t => t.id === editingSubtask.mainTaskId)?.dueDate || '';
+                          setModalIsSameDueDate(e.target.checked);
+                          if (e.target.checked) {
+                            setEditingSubtask({
+                              ...editingSubtask,
+                              subtask: { ...editingSubtask.subtask, dueDate: mainDueDate }
+                            });
+                          }
+                        }}
+                        className="rounded border-surface-container-high text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <label htmlFor="modalSameDueDate" className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant cursor-pointer">
+                        Prazo igual à principal
+                      </label>
+                    </div>
                     <input 
                       type="date" 
-                      disabled
-                      value={tasks.find(t => t.id === editingSubtask.mainTaskId)?.dueDate || ''}
-                      className="w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 text-sm font-bold opacity-75 cursor-not-allowed"
+                      disabled={modalIsSameDueDate}
+                      value={modalIsSameDueDate ? (tasks.find(t => t.id === editingSubtask.mainTaskId)?.dueDate || '') : (editingSubtask.subtask.dueDate || '')}
+                      onChange={e => setEditingSubtask({
+                        ...editingSubtask,
+                        subtask: { ...editingSubtask.subtask, dueDate: e.target.value }
+                      })}
+                      className={cn(
+                        "w-full bg-surface-container-low border-none rounded-2xl py-4 px-6 text-sm font-bold transition-all focus:ring-2 focus:ring-primary focus:outline-none",
+                        modalIsSameDueDate && "opacity-75 cursor-not-allowed"
+                      )}
                     />
                   </div>
 
@@ -1856,7 +1895,7 @@ export function TaskList() {
                     const parentTask = tasks.find(t => t.id === mainTaskId);
                     const updatedSubtask = {
                       ...subtask,
-                      dueDate: parentTask?.dueDate || subtask.dueDate
+                      dueDate: modalIsSameDueDate ? (parentTask?.dueDate || subtask.dueDate) : (subtask.dueDate || parentTask?.dueDate || '')
                     };
                     setTasks(prev => prev.map(t => {
                       if (t.id === mainTaskId) {

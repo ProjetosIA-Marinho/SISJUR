@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Save, Plus, Trash2, Paperclip, Calendar, ShieldCheck, FileText, User as UserIcon, AlertTriangle } from 'lucide-react';
+import { X, Save, Plus, Trash2, Paperclip, Calendar, ShieldCheck, FileText, User as UserIcon, AlertTriangle, Edit3 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, User } from '../types';
 import { USER_ME } from '../data';
 import { cn } from '../lib/utils';
@@ -104,10 +104,13 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
     entryDate: new Date().toISOString().split('T')[0],
     expeditedDate: '',
     observations: '',
-    tags: ['AAJ'], // Default to 'AAJ' as Setor Responsável
+    tags: [USER_ME.section || 'AAJ'], // Default to the logged-in user's sector
     subtasks: [],
     ...initialTask
   });
+
+  const [isSameDueDate, setIsSameDueDate] = React.useState(true);
+  const [editingSubtaskId, setEditingSubtaskId] = React.useState<string | null>(null);
 
   const [subtaskForm, setSubtaskForm] = React.useState<Partial<Task>>({
     title: '',
@@ -125,45 +128,70 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.status === 'completed' && formData.subtasks && formData.subtasks.length > 0) {
-      const pendingSubtasks = formData.subtasks.filter(st => st.status !== 'completed');
-      if (pendingSubtasks.length > 0) {
-        setErrorMessage(
-          `Não é possível alterar o status da tarefa principal para "Concluída" porque existem ${pendingSubtasks.length} tarefas relacionadas pendentes.`
-        );
-        return;
-      }
-    }
     setErrorMessage(null);
     onSave(formData);
   };
 
   const addSubtask = () => {
     if (subtaskForm.title) {
-      const newSubtask: Task = {
-        id: `st-${Date.now()}`,
-        title: subtaskForm.title,
-        status: subtaskForm.status || 'not-started',
-        priority: subtaskForm.priority || 'low',
-        dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
-        assignee: subtaskForm.assignee || USER_ME,
-        progress: subtaskForm.status === 'completed' ? 100 : 0,
-        sigadOfRec: '',
-        origem: '',
-        sigadOfExp: subtaskForm.sigadOfExp || '',
-        destination: subtaskForm.destination || '',
-        documentType: subtaskForm.documentType || 'Ofício',
-        entryDate: subtaskForm.entryDate || new Date().toISOString().split('T')[0],
-        expeditedDate: subtaskForm.expeditedDate || '',
-        observations: subtaskForm.observations || '',
-        year: new Date().getFullYear().toString(),
-        tags: [],
-        subtasks: []
-      };
-      setFormData({
-        ...formData,
-        subtasks: [...(formData.subtasks || []), newSubtask]
-      });
+      const finalDueDate = isSameDueDate 
+        ? (formData.dueDate || new Date().toISOString().split('T')[0]) 
+        : (subtaskForm.dueDate || new Date().toISOString().split('T')[0]);
+
+      if (editingSubtaskId) {
+        // Update existing subtask
+        setFormData({
+          ...formData,
+          subtasks: (formData.subtasks || []).map(st => {
+            if (st.id === editingSubtaskId) {
+              return {
+                ...st,
+                title: subtaskForm.title || '',
+                status: subtaskForm.status || 'not-started',
+                priority: subtaskForm.priority || 'low',
+                dueDate: finalDueDate,
+                assignee: subtaskForm.assignee || USER_ME,
+                progress: subtaskForm.status === 'completed' ? 100 : st.progress,
+                sigadOfExp: subtaskForm.sigadOfExp || '',
+                destination: subtaskForm.destination || '',
+                documentType: subtaskForm.documentType || 'Ofício',
+                entryDate: subtaskForm.entryDate || new Date().toISOString().split('T')[0],
+                expeditedDate: subtaskForm.expeditedDate || '',
+                observations: subtaskForm.observations || '',
+              };
+            }
+            return st;
+          })
+        });
+        setEditingSubtaskId(null);
+      } else {
+        // Add new subtask
+        const newSubtask: Task = {
+          id: `st-${Date.now()}`,
+          title: subtaskForm.title,
+          status: subtaskForm.status || 'not-started',
+          priority: subtaskForm.priority || 'low',
+          dueDate: finalDueDate,
+          assignee: subtaskForm.assignee || USER_ME,
+          progress: subtaskForm.status === 'completed' ? 100 : 0,
+          sigadOfRec: '',
+          origem: '',
+          sigadOfExp: subtaskForm.sigadOfExp || '',
+          destination: subtaskForm.destination || '',
+          documentType: subtaskForm.documentType || 'Ofício',
+          entryDate: subtaskForm.entryDate || new Date().toISOString().split('T')[0],
+          expeditedDate: subtaskForm.expeditedDate || '',
+          observations: subtaskForm.observations || '',
+          year: new Date().getFullYear().toString(),
+          tags: [],
+          subtasks: []
+        };
+        setFormData({
+          ...formData,
+          subtasks: [...(formData.subtasks || []), newSubtask]
+        });
+      }
+
       // Reset subtask form
       setSubtaskForm({
         title: '',
@@ -178,7 +206,44 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
         expeditedDate: '',
         observations: '',
       });
+      setIsSameDueDate(true);
     }
+  };
+
+  const handleEditSubtask = (st: Task) => {
+    setEditingSubtaskId(st.id);
+    setSubtaskForm({
+      title: st.title,
+      status: st.status,
+      priority: st.priority,
+      dueDate: st.dueDate,
+      assignee: st.assignee,
+      sigadOfExp: st.sigadOfExp,
+      destination: st.destination,
+      documentType: st.documentType,
+      entryDate: st.entryDate,
+      expeditedDate: st.expeditedDate,
+      observations: st.observations,
+    });
+    setIsSameDueDate(st.dueDate === formData.dueDate);
+  };
+
+  const cancelEditSubtask = () => {
+    setEditingSubtaskId(null);
+    setSubtaskForm({
+      title: '',
+      status: 'not-started',
+      priority: 'low',
+      dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+      assignee: USER_ME,
+      sigadOfExp: '',
+      destination: '',
+      documentType: 'Ofício',
+      entryDate: new Date().toISOString().split('T')[0],
+      expeditedDate: '',
+      observations: '',
+    });
+    setIsSameDueDate(true);
   };
 
   const removeSubtask = (id: string) => {
@@ -186,6 +251,9 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
       ...formData,
       subtasks: formData.subtasks?.filter(st => st.id !== id)
     });
+    if (editingSubtaskId === id) {
+      cancelEditSubtask();
+    }
   };
 
   return (
@@ -461,12 +529,27 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Prazo (Igual à Principal)</label>
+                <div className="flex items-center gap-1.5 ml-1">
+                  <input
+                    type="checkbox"
+                    id="sameDueDateForm"
+                    checked={isSameDueDate}
+                    onChange={e => setIsSameDueDate(e.target.checked)}
+                    className="rounded border-surface-container-high text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                  />
+                  <label htmlFor="sameDueDateForm" className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant cursor-pointer">
+                    Prazo igual à principal
+                  </label>
+                </div>
                 <input 
                   type="date"
-                  disabled
-                  value={formData.dueDate || ''}
-                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold opacity-75 cursor-not-allowed"
+                  disabled={isSameDueDate}
+                  value={isSameDueDate ? (formData.dueDate || '') : (subtaskForm.dueDate || '')}
+                  onChange={e => setSubtaskForm({ ...subtaskForm, dueDate: e.target.value })}
+                  className={cn(
+                    "w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold transition-all focus:ring-2 focus:ring-primary",
+                    isSameDueDate && "opacity-75 cursor-not-allowed"
+                  )}
                 />
               </div>
               <div className="space-y-1">
@@ -491,14 +574,23 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
               />
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-3">
+              {editingSubtaskId && (
+                <button 
+                  type="button" 
+                  onClick={cancelEditSubtask}
+                  className="bg-surface-container hover:bg-surface-container-high py-3 px-6 rounded-2xl font-bold text-xs hover:scale-105 transition-all"
+                >
+                  Cancelar Edição
+                </button>
+              )}
               <button 
                 type="button" 
                 onClick={addSubtask}
                 className="bg-secondary text-on-secondary dark:bg-amber-400 dark:text-slate-950 py-3 px-6 rounded-2xl font-bold shadow-lg hover:scale-105 transition-all text-xs flex items-center gap-2"
               >
-                <Plus size={16} />
-                Adicionar Tarefa Relacionada
+                {editingSubtaskId ? <Save size={16} /> : <Plus size={16} />}
+                {editingSubtaskId ? 'Salvar Alterações' : 'Adicionar Tarefa Relacionada'}
               </button>
             </div>
           </div>
@@ -512,13 +604,24 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
                     <span className="text-sm font-bold text-primary">{st.title}</span>
                     <span className="text-[9px] text-on-surface-variant uppercase tracking-wider">Tarefa Relacionada # {st.id.slice(-4)}</span>
                   </div>
-                  <button 
-                    type="button" 
-                    onClick={() => removeSubtask(st.id)}
-                    className="text-on-surface-variant hover:text-error transition-all p-1"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      onClick={() => handleEditSubtask(st)}
+                      className="text-on-surface-variant hover:text-primary transition-all p-1"
+                      title="Editar Tarefa Relacionada"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => removeSubtask(st.id)}
+                      className="text-on-surface-variant hover:text-error transition-all p-1"
+                      title="Excluir Tarefa Relacionada"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px] font-medium text-on-surface-variant/80 bg-white/20 p-3 rounded-xl">
