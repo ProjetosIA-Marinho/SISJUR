@@ -14,6 +14,7 @@ interface DataContextType {
   updateUser: (user: User) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   refreshAll: () => Promise<void>;
+  restoreTasks: (newTasks: Task[]) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -246,6 +247,47 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     refreshAll();
   }, []);
 
+  useEffect(() => {
+    if (loading || tasks.length === 0 || USER_ME.accessLevel !== 'gestor') return;
+
+    try {
+      const frequency = localStorage.getItem('sisjur_backup_frequency') || 'semanal';
+      if (frequency === 'desativado') return;
+
+      const storedHistory = localStorage.getItem('sisjur_backups_history');
+      const history = storedHistory ? JSON.parse(storedHistory) : [];
+
+      const autoBackups = history.filter((h: any) => h.type === frequency);
+      const lastBackup = autoBackups.length > 0 
+        ? new Date(autoBackups[autoBackups.length - 1].date).getTime() 
+        : 0;
+
+      const now = Date.now();
+      let shouldBackup = false;
+
+      if (frequency === 'semanal' && now - lastBackup > 7 * 24 * 60 * 60 * 1000) {
+        shouldBackup = true;
+      } else if (frequency === 'mensal' && now - lastBackup > 30 * 24 * 60 * 60 * 1000) {
+        shouldBackup = true;
+      } else if (frequency === 'semestral' && now - lastBackup > 180 * 24 * 60 * 60 * 1000) {
+        shouldBackup = true;
+      }
+
+      if (shouldBackup) {
+        const newBackup = {
+          id: `backup-auto-${Date.now()}`,
+          date: new Date().toISOString(),
+          type: frequency,
+          tasks: tasks
+        };
+        const updatedHistory = [...history, newBackup].slice(-15);
+        localStorage.setItem('sisjur_backups_history', JSON.stringify(updatedHistory));
+      }
+    } catch (e) {
+      console.error('Error running auto backup:', e);
+    }
+  }, [loading, tasks]);
+
   const addTask = async (task: Task) => {
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       try {
@@ -381,8 +423,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   }, [team, onlineUsers, currentUser]);
 
+  const restoreTasks = async (newTasks: Task[]) => {
+    if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      try {
+        const { error: delError } = await supabase
+          .from('tasks')
+          .delete()
+          .neq('id', 'dummy_task_id_for_delete_all');
+        if (delError) throw delError;
+
+        if (newTasks.length > 0) {
+          const dbTasks = newTasks.map(mapTaskToDb);
+          const { error: insError } = await supabase
+            .from('tasks')
+            .insert(dbTasks);
+          if (insError) throw insError;
+        }
+      } catch (err) {
+        console.error('Failed to restore tasks in Supabase:', err);
+      }
+    }
+
+    setLocalData('sisjur_tasks', newTasks);
+    await refreshAll();
+  };
+
   return (
-    <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll }}>
+    <DataContext.Provider value={{ tasks, team: activeTeam, projects, loading, addTask, updateTask, deleteTask, updateUser, deleteUser, refreshAll, restoreTasks }}>
       {children}
     </DataContext.Provider>
   );

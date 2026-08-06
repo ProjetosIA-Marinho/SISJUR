@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Bell, Shield, SlidersHorizontal, Mail, BellRing, BarChart2, Lock, Smartphone, Monitor, ChevronRight, Edit2, Users, Eye, EyeOff, X } from 'lucide-react';
+import { User, Bell, Shield, SlidersHorizontal, Mail, BellRing, BarChart2, Lock, Smartphone, Monitor, ChevronRight, Edit2, Users, Eye, EyeOff, X, Database, Download, Upload, Clock, RotateCcw, History, Trash2 } from 'lucide-react';
 import { USER_ME } from '../data';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
@@ -68,7 +68,31 @@ export function Settings() {
     }
   };
 
-  const { team: dbUsers, refreshAll, updateUser } = useData();
+  const { team: dbUsers, refreshAll, updateUser, tasks, restoreTasks } = useData();
+  const [backupFrequency, setBackupFrequency] = React.useState(() => {
+    return localStorage.getItem('sisjur_backup_frequency') || 'semanal';
+  });
+  const [backupHistory, setBackupHistory] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const loadHistory = () => {
+      const stored = localStorage.getItem('sisjur_backups_history');
+      if (stored) {
+        try {
+          setBackupHistory(JSON.parse(stored));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    loadHistory();
+  }, [activeTab]);
+
+  const handleBackupFrequencyChange = (freq: string) => {
+    setBackupFrequency(freq);
+    localStorage.setItem('sisjur_backup_frequency', freq);
+  };
+
   const [editingUser, setEditingUser] = React.useState<any | null>(null);
   const [editName, setEditName] = React.useState('');
   const [editRole, setEditRole] = React.useState('');
@@ -212,6 +236,9 @@ export function Settings() {
     { id: 'perfil', label: 'Perfil', icon: User },
     ...(USER_ME.accessLevel === 'gestor' || USER_ME.accessLevel === 'operador-chefe'
       ? [{ id: 'usuarios', label: 'Usuários Cadastrados', icon: Users }]
+      : []),
+    ...(USER_ME.accessLevel === 'gestor'
+      ? [{ id: 'backup', label: 'Backup e Restauração', icon: Database }]
       : []),
     { id: 'notificacoes', label: 'Notificações', icon: Bell },
     { id: 'seguranca', label: 'Segurança', icon: Shield },
@@ -663,6 +690,245 @@ export function Settings() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Backup and Restore Section */}
+        {activeTab === 'backup' && USER_ME.accessLevel === 'gestor' && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="glass-card p-10 rounded-[2.5rem] border-white/60 dark:border-slate-800/40 shadow-lg space-y-8"
+          >
+            <div className="border-b border-surface-container-high dark:border-slate-800 pb-6">
+              <h2 className="text-3xl font-black tracking-tight mb-2">Backup e Restauração de Tarefas</h2>
+              <p className="text-on-surface-variant font-medium">
+                Gere cópias de segurança de suas tarefas para download ou restaure versões salvas anteriormente no sistema.
+              </p>
+            </div>
+
+            {/* Manual actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Export/Backup card */}
+              <div className="p-6 rounded-3xl bg-surface-container-low/30 border border-white/40 dark:border-slate-800/40 flex flex-col justify-between gap-4 group">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-white/10 flex items-center justify-center text-primary dark:text-white">
+                      <Download size={20} />
+                    </div>
+                    <h3 className="font-bold text-lg">Criar Backup Manual</h3>
+                  </div>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Baixe o arquivo de backup no formato JSON contendo a versão atual de todas as tarefas cadastradas no sistema.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => {
+                    const newBackup = {
+                      id: `backup-manual-${Date.now()}`,
+                      date: new Date().toISOString(),
+                      type: 'manual',
+                      tasks: tasks
+                    };
+                    const updated = [...backupHistory, newBackup].slice(-15);
+                    setBackupHistory(updated);
+                    localStorage.setItem('sisjur_backups_history', JSON.stringify(updated));
+                    
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
+                    const downloadAnchor = document.createElement('a');
+                    downloadAnchor.setAttribute("href", dataStr);
+                    downloadAnchor.setAttribute("download", `sisjur_backup_tarefas_${new Date().toISOString().split('T')[0]}.json`);
+                    document.body.appendChild(downloadAnchor);
+                    downloadAnchor.click();
+                    downloadAnchor.remove();
+                    
+                    alert('Backup manual gerado e baixado com sucesso!');
+                  }}
+                  className="w-full py-3.5 bg-primary text-on-primary rounded-2xl font-bold text-xs hover:opacity-90 transition-all cursor-pointer text-center"
+                >
+                  Fazer Backup e Download JSON
+                </button>
+              </div>
+
+              {/* Import/Restore card */}
+              <div className="p-6 rounded-3xl bg-surface-container-low/30 border border-white/40 dark:border-slate-800/40 flex flex-col justify-between gap-4 group">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary dark:text-amber-400">
+                      <Upload size={20} />
+                    </div>
+                    <h3 className="font-bold text-lg">Restaurar de Arquivo JSON</h3>
+                  </div>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Faça upload de um arquivo de backup (.json) gerado anteriormente para recuperar as tarefas.
+                  </p>
+                </div>
+                <div>
+                  <input 
+                    type="file" 
+                    id="backup-file-upload" 
+                    accept=".json"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (evt) => {
+                        try {
+                          const parsed = JSON.parse(evt.target?.result as string);
+                          if (Array.isArray(parsed)) {
+                            const isValid = parsed.every(item => typeof item === 'object' && item !== null && 'id' in item && 'title' in item);
+                            if (isValid) {
+                              if (confirm('Atenção: Ao restaurar este backup, todas as tarefas atuais serão substituídas. Deseja prosseguir?')) {
+                                await restoreTasks(parsed);
+                                alert('Backup restaurado com sucesso!');
+                              }
+                            } else {
+                              alert('Arquivo de backup inválido: formato de dados de tarefas incorreto.');
+                            }
+                          } else {
+                            alert('Arquivo de backup inválido: deve ser um array JSON de tarefas.');
+                          }
+                        } catch (err) {
+                          alert('Erro ao ler o arquivo JSON de backup.');
+                        }
+                      };
+                      reader.readAsText(file);
+                      e.target.value = ''; // reset input
+                    }}
+                    className="hidden"
+                  />
+                  <button 
+                    onClick={() => document.getElementById('backup-file-upload')?.click()}
+                    className="w-full py-3.5 border-2 border-dashed border-surface-container-highest dark:border-slate-800 text-on-surface-variant hover:text-primary dark:hover:text-white rounded-2xl font-bold text-xs hover:bg-surface-container-low transition-all cursor-pointer text-center"
+                  >
+                    Selecionar e Enviar Arquivo JSON
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Auto backup settings */}
+            <div className="p-6 rounded-3xl bg-surface-container-low/30 border border-white/40 dark:border-slate-800/40 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div className="space-y-1">
+                  <h3 className="font-bold text-lg flex items-center gap-2">
+                    <Clock size={18} className="text-on-surface-variant" />
+                    Frequência de Backup Automático
+                  </h3>
+                  <p className="text-xs text-on-surface-variant">
+                    Escolha o intervalo para o sistema gerar cópias automáticas de segurança localmente.
+                  </p>
+                </div>
+                <select 
+                  value={backupFrequency}
+                  onChange={e => handleBackupFrequencyChange(e.target.value)}
+                  className="bg-surface-container dark:bg-slate-800 border-none rounded-2xl px-5 py-3 text-sm font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                >
+                  <option value="desativado">Desativado</option>
+                  <option value="semanal">Semanalmente</option>
+                  <option value="mensal">Mensalmente</option>
+                  <option value="semestral">Semestralmente</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Backups History / Versioning list */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <History size={18} className="text-on-surface-variant" />
+                Histórico de Versões / Cópias Locais
+              </h3>
+              
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-surface-container-high dark:border-slate-800 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/70">
+                      <th className="pb-3 pl-4">Data do Backup</th>
+                      <th className="pb-3">Tipo / Frequência</th>
+                      <th className="pb-3">Qtd. Tarefas</th>
+                      <th className="pb-3 pr-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-container-high/40 dark:divide-slate-800/40">
+                    {backupHistory.slice().reverse().map((b) => {
+                      const dateObj = new Date(b.date);
+                      const formattedDate = dateObj.toLocaleString('pt-BR');
+                      const typeLabel = b.type === 'manual' ? 'Manual' : b.type === 'semanal' ? 'Semanal' : b.type === 'mensal' ? 'Mensal' : b.type === 'semestral' ? 'Semestral' : b.type;
+                      return (
+                        <tr key={b.id} className="hover:bg-surface-container-low/30 dark:hover:bg-slate-900/10 transition-colors text-xs font-bold text-primary">
+                          <td className="py-4 pl-4">{formattedDate}</td>
+                          <td className="py-4">
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                              b.type === 'manual' 
+                                ? "bg-blue-500/15 text-blue-700 border-blue-500/30" 
+                                : "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                            )}>
+                              {typeLabel}
+                            </span>
+                          </td>
+                          <td className="py-4">{b.tasks?.length || 0}</td>
+                          <td className="py-4 pr-4 text-right flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(b.tasks, null, 2));
+                                const downloadAnchor = document.createElement('a');
+                                downloadAnchor.setAttribute("href", dataStr);
+                                downloadAnchor.setAttribute("download", `sisjur_backup_tarefas_${b.id}.json`);
+                                document.body.appendChild(downloadAnchor);
+                                downloadAnchor.click();
+                                downloadAnchor.remove();
+                              }}
+                              className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all text-[10px] font-black uppercase tracking-widest rounded-xl cursor-pointer"
+                              title="Baixar JSON"
+                            >
+                              Download
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm('Atenção: Ao restaurar este backup, todas as tarefas atuais serão substituídas pelas tarefas desta versão. Deseja prosseguir?')) {
+                                  try {
+                                    await restoreTasks(b.tasks);
+                                    alert('Versão restaurada com sucesso!');
+                                  } catch (e) {
+                                    alert('Erro ao restaurar tarefas.');
+                                  }
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-primary text-on-primary hover:opacity-95 transition-all text-[10px] font-black uppercase tracking-widest rounded-xl cursor-pointer"
+                              title="Restaurar Versão"
+                            >
+                              Restaurar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Deseja mesmo excluir esta cópia de backup do histórico local?')) {
+                                  const updated = backupHistory.filter(item => item.id !== b.id);
+                                  setBackupHistory(updated);
+                                  localStorage.setItem('sisjur_backups_history', JSON.stringify(updated));
+                                }
+                              }}
+                              className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-xl transition-all cursor-pointer"
+                              title="Excluir Cópia"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {backupHistory.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-xs italic font-bold tracking-widest text-on-surface-variant/40 uppercase">
+                          Nenhuma cópia de backup no histórico.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
 
