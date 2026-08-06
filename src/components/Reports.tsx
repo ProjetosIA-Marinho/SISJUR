@@ -345,7 +345,18 @@ export function Reports() {
 
           return true;
         }).map((member) => {
-          const memberTasks = TASKS.filter(t => t.assignee?.id === member.id && t.documentType !== 'holiday' && t.documentType !== 'routine');
+          const mainTasksForMember = TASKS.filter(t => t.assignee?.id === member.id && t.documentType !== 'holiday' && t.documentType !== 'routine');
+          const subTasksForMember: Task[] = [];
+          TASKS.forEach(t => {
+            if (t.subtasks && t.subtasks.length > 0) {
+              t.subtasks.forEach(st => {
+                if (st.assignee?.id === member.id && st.documentType !== 'holiday' && st.documentType !== 'routine') {
+                  subTasksForMember.push(st);
+                }
+              });
+            }
+          });
+          const memberTasks = [...mainTasksForMember, ...subTasksForMember];
           const total = memberTasks.length;
           const completed = memberTasks.filter(t => t.status === 'completed').length;
           const inProgress = memberTasks.filter(t => t.status === 'in-progress').length;

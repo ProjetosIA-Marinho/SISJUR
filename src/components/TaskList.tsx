@@ -578,8 +578,12 @@ export function TaskList() {
         if (taskSector !== USER_ME.section) return false;
       }
 
-      if (activeFilters.status && task.status !== activeFilters.status) {
-        return false;
+      if (activeFilters.status) {
+        const matchesMain = task.status === activeFilters.status;
+        const matchesSubtasks = task.subtasks?.some(st => st.status === activeFilters.status);
+        if (!matchesMain && !matchesSubtasks) {
+          return false;
+        }
       }
       if (activeFilters.priority && task.priority !== activeFilters.priority) {
         return false;

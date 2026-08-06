@@ -510,7 +510,18 @@ export function Dashboard() {
             
             <div className="space-y-6">
               {filteredMembers.map((member) => {
-                const memberTasks = filteredTasks.filter(t => t.assignee?.id === member.id);
+                const mainTasksForMember = filteredTasks.filter(t => t.assignee?.id === member.id);
+                const subTasksForMember: typeof TASKS[0][] = [];
+                filteredTasks.forEach(t => {
+                  if (t.subtasks && t.subtasks.length > 0) {
+                    t.subtasks.forEach(st => {
+                      if (st.assignee?.id === member.id) {
+                        subTasksForMember.push(st);
+                      }
+                    });
+                  }
+                });
+                const memberTasks = [...mainTasksForMember, ...subTasksForMember];
                 const total = memberTasks.length;
                 const completed = memberTasks.filter(t => t.status === 'completed').length;
                 const inProgress = memberTasks.filter(t => t.status === 'in-progress').length;
