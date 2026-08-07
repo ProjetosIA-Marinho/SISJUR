@@ -345,13 +345,19 @@ export function Reports() {
 
           return true;
         }).map((member) => {
-          const mainTasksForMember = TASKS.filter(t => t.assignee?.id === member.id && t.documentType !== 'holiday' && t.documentType !== 'routine');
-          const subTasksForMember: Task[] = [];
+          const mainTasksForMember = TASKS
+            .filter(t => t.assignee?.id === member.id && t.documentType !== 'holiday' && t.documentType !== 'routine')
+            .map(t => ({ ...t, effectiveDocType: t.documentType || 'Outro' }));
+
+          const subTasksForMember: (Task & { effectiveDocType: string })[] = [];
           TASKS.forEach(t => {
             if (t.subtasks && t.subtasks.length > 0) {
               t.subtasks.forEach(st => {
                 if (st.assignee?.id === member.id && st.documentType !== 'holiday' && st.documentType !== 'routine') {
-                  subTasksForMember.push(st);
+                  subTasksForMember.push({
+                    ...st,
+                    effectiveDocType: st.documentType || t.documentType || 'Outro'
+                  });
                 }
               });
             }
@@ -367,9 +373,7 @@ export function Reports() {
           // Group by document type
           const docTypeMap: Record<string, number> = {};
           memberTasks.forEach(t => {
-            if (t.documentType) {
-              docTypeMap[t.documentType] = (docTypeMap[t.documentType] || 0) + 1;
-            }
+            docTypeMap[t.effectiveDocType] = (docTypeMap[t.effectiveDocType] || 0) + 1;
           });
 
           return (
@@ -533,7 +537,7 @@ export function Reports() {
                   </h5>
                   <div className="space-y-4">
                     {Object.entries(docTypeMap).map(([type, count]) => {
-                      const typeTasks = memberTasks.filter(t => t.documentType === type);
+                      const typeTasks = memberTasks.filter(t => t.effectiveDocType === type);
                       const typeCompleted = typeTasks.filter(t => t.status === 'completed').length;
                       
                       let IconComponent = File;
