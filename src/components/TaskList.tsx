@@ -12,6 +12,16 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useData } from '../context/DataContext';
 
+const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export function TaskList() {
   const { tasks: dbTasks, team: TEAM, addTask, updateTask, deleteTask } = useData();
   const [tasks, setLocalTasks] = React.useState<Task[]>([]);
@@ -308,14 +318,17 @@ export function TaskList() {
             ? setorVal 
             : (matchedAssignee ? matchedAssignee.section : 'AAJ');
 
-          // Create Subtasks automatically from SIGAD EXP column if separated by '/'
+          const mainTaskId = generateUUID();
+
+          // Create Subtasks automatically from SIGAD EXP column if separated by '/', ',', ';', or '\'
           let subtasksList: Task[] = [];
-          if (sigadOfExp && sigadOfExp.includes('/')) {
-            const sigadParts = sigadOfExp.split('/').map(s => s.trim()).filter(Boolean);
+          if (sigadOfExp && (/[\/\,\;\\]/).test(sigadOfExp)) {
+            const sigadParts = sigadOfExp.split(/[\/\,\;\\]+/).map(s => s.trim()).filter(Boolean);
             if (sigadParts.length > 0) {
-              subtasksList = sigadParts.map((partSigad, subIdx) => {
+              subtasksList = sigadParts.map((partSigad) => {
                 return {
-                  id: 'st_imp_' + Date.now() + '_' + subIdx + '_' + Math.random().toString(36).substr(2, 4),
+                  id: generateUUID(),
+                  parentId: mainTaskId,
                   title: title,
                   status: status,
                   priority: priority,
@@ -339,7 +352,7 @@ export function TaskList() {
           }
 
           return {
-            id: 't_imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            id: mainTaskId,
             title,
             status,
             priority,

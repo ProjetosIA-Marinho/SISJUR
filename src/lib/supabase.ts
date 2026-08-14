@@ -96,15 +96,16 @@ export function mapTaskFromDb(row: any): Task {
 
 export function mapTaskToDb(task: Partial<Task>): any {
   const dbObj: any = {};
-  if (task.id !== undefined) dbObj.id = task.id;
+  const checkUUID = (val?: string) => val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
+
+  if (task.id !== undefined && checkUUID(task.id)) dbObj.id = task.id;
   if (task.title !== undefined) dbObj.title = task.title;
   if (task.description !== undefined) dbObj.description = task.description;
   if (task.status !== undefined) dbObj.status = task.status;
   if (task.priority !== undefined) dbObj.priority = task.priority;
   if (task.dueDate !== undefined) dbObj.due_date = task.dueDate;
   if (task.assignee !== undefined) {
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.assignee.id || '');
-    dbObj.assignee_id = isUUID ? task.assignee.id : null;
+    dbObj.assignee_id = checkUUID(task.assignee.id) ? task.assignee.id : null;
   }
   if (task.progress !== undefined) dbObj.progress = task.progress;
   if (task.sigadOfRec !== undefined) dbObj.sigad_of_rec = task.sigadOfRec;
@@ -117,7 +118,7 @@ export function mapTaskToDb(task: Partial<Task>): any {
   if (task.observations !== undefined) dbObj.observations = task.observations;
   if (task.year !== undefined) dbObj.year = task.year;
   if (task.tags !== undefined) dbObj.tags = task.tags;
-  if (task.parentId !== undefined) dbObj.parent_id = task.parentId;
+  if (task.parentId !== undefined && checkUUID(task.parentId)) dbObj.parent_id = task.parentId;
   if (task.isTemplate !== undefined) dbObj.is_template = task.isTemplate;
   if (task.recurringPattern !== undefined) dbObj.recurring_pattern = task.recurringPattern;
   if (task.commentsCount !== undefined) dbObj.comments_count = task.commentsCount;
