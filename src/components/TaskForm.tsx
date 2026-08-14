@@ -118,6 +118,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
     priority: 'low',
     dueDate: new Date().toISOString().split('T')[0],
     assignee: USER_ME,
+    sigadOfRec: '',
     sigadOfExp: '',
     destination: '',
     documentType: 'Ofício',
@@ -152,6 +153,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
                 dueDate: finalDueDate,
                 assignee: subtaskForm.assignee || USER_ME,
                 progress: subtaskForm.status === 'completed' ? 100 : st.progress,
+                sigadOfRec: subtaskForm.sigadOfRec || '',
                 sigadOfExp: subtaskForm.sigadOfExp || '',
                 destination: subtaskForm.destination || '',
                 documentType: subtaskForm.documentType || 'Ofício',
@@ -174,7 +176,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
           dueDate: finalDueDate,
           assignee: subtaskForm.assignee || USER_ME,
           progress: subtaskForm.status === 'completed' ? 100 : 0,
-          sigadOfRec: '',
+          sigadOfRec: subtaskForm.sigadOfRec || '',
           origem: '',
           sigadOfExp: subtaskForm.sigadOfExp || '',
           destination: subtaskForm.destination || '',
@@ -199,6 +201,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
         priority: 'low',
         dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
         assignee: USER_ME,
+        sigadOfRec: '',
         sigadOfExp: '',
         destination: '',
         documentType: 'Ofício',
@@ -218,6 +221,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
       priority: st.priority,
       dueDate: st.dueDate,
       assignee: st.assignee,
+      sigadOfRec: st.sigadOfRec || '',
       sigadOfExp: st.sigadOfExp,
       destination: st.destination,
       documentType: st.documentType,
@@ -447,14 +451,24 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
           <div className="space-y-4 bg-surface-container/30 p-6 rounded-3xl border border-white/40 !overflow-visible relative z-10">
             <h4 className="text-xs font-black uppercase tracking-wider text-secondary">Nova Tarefa Relacionada</h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end !overflow-visible relative z-30">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end !overflow-visible relative z-30">
               <div className="space-y-1">
-                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Assunto / Título *</label>
+                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">Assunto / Recebido *</label>
                 <input 
                   type="text" 
                   value={subtaskForm.title || ''}
                   onChange={e => setSubtaskForm({ ...subtaskForm, title: e.target.value })}
-                  placeholder="Título da tarefa relacionada..."
+                  placeholder="Assunto do documento recebido..."
+                  className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-wider text-on-surface-variant ml-1">SIGAD / Recebido</label>
+                <input 
+                  type="text" 
+                  value={subtaskForm.sigadOfRec || ''}
+                  onChange={e => setSubtaskForm({ ...subtaskForm, sigadOfRec: e.target.value })}
+                  placeholder="Ex: SIGAD-12345-2026"
                   className="w-full bg-surface-container-low border-none rounded-xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -626,8 +640,13 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px] font-medium text-on-surface-variant/80 bg-white/20 p-3 rounded-xl">
                   <div>
-                    <span className="font-bold">Assunto:</span> {st.title}
+                    <span className="font-bold">Assunto / Recebido:</span> {st.title}
                   </div>
+                  {st.sigadOfRec && (
+                    <div>
+                      <span className="font-bold">SIGAD Rec:</span> {st.sigadOfRec}
+                    </div>
+                  )}
                   {st.sigadOfExp && (
                     <div>
                       <span className="font-bold">Sigad Exp:</span> {st.sigadOfExp}
