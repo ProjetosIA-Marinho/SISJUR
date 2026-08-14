@@ -31,6 +31,14 @@ export function Calendar() {
   // Calendar Event States
   const [calendarEvents, setCalendarEvents] = React.useState<CalendarEvent[]>([]);
   const [editingEvent, setEditingEvent] = React.useState<CalendarEvent | null>(null);
+  const [selectedDayData, setSelectedDayData] = React.useState<{ date: Date; dateStr: string } | null>(null);
+
+  const openDayDetailModal = (dateObj: Date) => {
+    setSelectedDayData({
+      date: dateObj,
+      dateStr: formatDateString(dateObj)
+    });
+  };
 
   React.useEffect(() => {
     if (TEAM && TEAM.length > 0) {
@@ -428,9 +436,14 @@ export function Calendar() {
                 return (
                   <div 
                     key={i} 
+                    onClick={() => {
+                      if (day.num !== null && day.date !== null) {
+                        openDayDetailModal(day.date);
+                      }
+                    }}
                     className={cn(
                       "min-h-[130px] p-3 border-r border-b border-surface-container-low dark:border-slate-800/50 transition-all group flex flex-col relative",
-                      day.num === null ? "bg-surface-container-low/20 dark:bg-slate-950/10" : "hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-inner",
+                      day.num === null ? "bg-surface-container-low/20 dark:bg-slate-950/10 cursor-default" : "hover:bg-white/80 dark:hover:bg-slate-800/80 hover:shadow-inner cursor-pointer",
                       dayIsToday && "bg-secondary-container/5 dark:bg-yellow-500/5"
                     )}
                   >
@@ -445,7 +458,10 @@ export function Calendar() {
                       </span>
                       {day.date && (
                         <button 
-                          onClick={() => openCreateModal(day.date!)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCreateModal(day.date!);
+                          }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 bg-surface-container hover:bg-primary hover:text-white rounded transition-all cursor-pointer"
                           title="Adicionar evento neste dia"
                         >
@@ -507,8 +523,13 @@ export function Calendar() {
                 return (
                   <div 
                     key={i} 
+                    onClick={() => {
+                      if (day.date) {
+                        openDayDetailModal(day.date);
+                      }
+                    }}
                     className={cn(
-                      "min-h-[300px] p-4 border-r border-surface-container-low dark:border-slate-800/50 transition-all hover:bg-white/80 dark:hover:bg-slate-800/80 flex flex-col group relative",
+                      "min-h-[300px] p-4 border-r border-surface-container-low dark:border-slate-800/50 transition-all hover:bg-white/80 dark:hover:bg-slate-800/80 flex flex-col group relative cursor-pointer",
                       dayIsToday && "bg-secondary-container/5 dark:bg-yellow-500/5"
                     )}
                   >
@@ -522,7 +543,10 @@ export function Calendar() {
                         {day.num}
                       </span>
                       <button 
-                        onClick={() => openCreateModal(day.date)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCreateModal(day.date);
+                        }}
                         className="opacity-0 group-hover:opacity-100 p-1 bg-surface-container hover:bg-primary hover:text-white rounded transition-all cursor-pointer"
                         title="Adicionar evento"
                       >
@@ -774,6 +798,166 @@ export function Calendar() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Day Details Broad View Modal */}
+      <AnimatePresence>
+        {selectedDayData && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 border border-surface-container-high dark:border-slate-800 rounded-[2.5rem] p-8 w-full max-w-2xl shadow-2xl text-left max-h-[85vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex justify-between items-center pb-4 mb-4 border-b border-surface-container-high dark:border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon size={22} className="text-primary" />
+                    <h3 className="font-black text-xl text-primary capitalize">
+                      {selectedDayData.date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    </h3>
+                  </div>
+                  <p className="text-xs font-medium text-on-surface-variant mt-1">
+                    Visualização ampla dos eventos e compromissos do dia
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const targetDate = selectedDayData.date;
+                      setSelectedDayData(null);
+                      openCreateModal(targetDate);
+                    }}
+                    className="px-4 py-2 bg-primary text-on-primary font-bold text-xs rounded-full hover:shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Plus size={16} /> Nova Tarefa
+                  </button>
+                  <button 
+                    onClick={() => setSelectedDayData(null)}
+                    className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors cursor-pointer"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Tasks List */}
+              <div className="flex-grow overflow-y-auto space-y-3.5 pr-2 custom-scrollbar">
+                {(() => {
+                  const dayEvents = calendarEvents.filter(event => {
+                    if (event.dueDate !== selectedDayData.dateStr) return false;
+                    if (event.type === 'holiday') return true;
+                    if (event.type === 'routine' && USER_ME.accessLevel !== 'gestor') {
+                      const assignee = TEAM.find(m => m.id === event.assigneeId);
+                      if (!assignee || assignee.section !== USER_ME.section) return false;
+                    }
+                    if (!event.assigneeId) return false;
+                    return selectedMainMember.includes(event.assigneeId);
+                  });
+
+                  if (dayEvents.length === 0) {
+                    return (
+                      <div className="py-16 text-center flex flex-col items-center justify-center opacity-70">
+                        <CalendarIcon size={56} className="text-on-surface-variant/40 mb-3 stroke-[1.5]" />
+                        <p className="text-base font-bold text-primary">Nenhuma tarefa agendada para este dia</p>
+                        <p className="text-xs text-on-surface-variant mt-1">Clique em "Nova Tarefa" para adicionar um compromisso.</p>
+                      </div>
+                    );
+                  }
+
+                  return dayEvents.map((event) => {
+                    const fullTask = TASKS.find(t => t.id === event.id);
+                    const assignee = TEAM.find(m => m.id === event.assigneeId);
+
+                    return (
+                      <div
+                        key={event.id}
+                        className={cn(
+                          "p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md",
+                          event.type === 'holiday' 
+                            ? "bg-blue-500/5 border-blue-500/30 dark:bg-blue-950/20"
+                            : event.type === 'routine'
+                            ? "bg-indigo-500/5 border-indigo-500/30 dark:bg-indigo-950/20"
+                            : event.priority === 'urgent' || event.priority === 'high'
+                            ? "bg-red-500/5 border-red-500/30 dark:bg-red-950/20"
+                            : event.priority === 'medium'
+                            ? "bg-amber-500/5 border-amber-500/30 dark:bg-amber-950/20"
+                            : "bg-emerald-500/5 border-emerald-500/30 dark:bg-emerald-950/20"
+                        )}
+                      >
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md text-white",
+                              event.type === 'holiday' ? "bg-blue-600" :
+                              event.type === 'routine' ? "bg-indigo-600" :
+                              event.priority === 'urgent' ? "bg-red-600" :
+                              event.priority === 'high' ? "bg-red-500" :
+                              event.priority === 'medium' ? "bg-amber-500" :
+                              "bg-emerald-500"
+                            )}>
+                              {event.type === 'holiday' ? 'Feriado' : event.type === 'routine' ? 'Rotina' : `Prioridade ${event.priority === 'urgent' ? 'Urgente' : event.priority === 'high' ? 'Alta' : event.priority === 'medium' ? 'Média' : 'Baixa'}`}
+                            </span>
+
+                            {fullTask?.status && (
+                              <span className="text-[9px] font-bold text-on-surface-variant bg-surface-container-high dark:bg-slate-800 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                                {fullTask.status === 'completed' ? 'Concluída' : fullTask.status === 'in-progress' ? 'Em Andamento' : 'Não Iniciada'}
+                              </span>
+                            )}
+
+                            {fullTask?.sigadOfRec && (
+                              <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                SIGAD REC: {fullTask.sigadOfRec}
+                              </span>
+                            )}
+                            {fullTask?.sigadOfExp && (
+                              <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                SIGAD EXP: {fullTask.sigadOfExp}
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="font-black text-sm text-primary leading-snug">
+                            {event.title}
+                          </h4>
+
+                          {fullTask?.description && (
+                            <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2">
+                              {fullTask.description}
+                            </p>
+                          )}
+
+                          {assignee && event.type !== 'holiday' && (
+                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-black/5 dark:border-white/5">
+                              <img src={assignee.avatar} className="w-5 h-5 rounded-full object-cover" alt="" />
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                {assignee.name} ({assignee.role})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <button
+                            onClick={() => {
+                              setSelectedDayData(null);
+                              openEditModal(event);
+                            }}
+                            className="px-3.5 py-2 bg-surface-container-high hover:bg-primary hover:text-white dark:bg-slate-800 text-primary font-bold text-xs rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            Editar / Detalhes
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             </motion.div>
           </div>
         )}
