@@ -163,11 +163,11 @@ export function TaskList() {
         'Prazo': '10/07/2026',
         'Término': '12/07/2026',
         'SIGAD Entrada': 'SIGAD-12345-2026',
-        'SIGAD Saída': 'SIGAD-12347-2026',
+        'SIGAD Saída': '531630 / 531631 / 531632',
         'Destino': 'SIJ',
         'Tipo': 'Estudo',
         'Ano': '2026',
-        'Observações': 'Análise preliminar das demandas do setor de logística'
+        'Observações': 'Separe valores por / no SIGAD Saída para gerar subtarefas automaticamente'
       },
       {
         'Título': 'Revisão de Portarias de Pessoal',
@@ -182,7 +182,7 @@ export function TaskList() {
         'Destino': 'AJUR',
         'Tipo': 'Portaria',
         'Ano': '2026',
-        'Observações': 'Verificar conformidade com a nova legislação'
+        'Observações': 'Campos vazios permanecem vazios'
       }
     ];
 
@@ -195,8 +195,8 @@ export function TaskList() {
   const downloadCsvTemplate = () => {
     const headers = [
       ['Título', 'Status', 'Prioridade', 'Responsável', 'Data Entrada', 'Prazo', 'Término', 'SIGAD Entrada', 'SIGAD Saída', 'Destino', 'Tipo', 'Ano', 'Observações'],
-      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '01/07/2026', '10/07/2026', '12/07/2026', 'SIGAD-12345-2026', 'SIGAD-12347-2026', 'SIJ', 'Estudo', '2026', 'Análise preliminar das demandas'],
-      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '02/07/2026', '15/07/2026', '', 'SIGAD-98765-2026', '', 'AJUR', 'Portaria', '2026', 'Verificar conformidade com a nova legislação']
+      ['Elaborar Relatório Técnico de Operações', 'Em Andamento', 'Alta', 'Ten. Cel. Silva', '01/07/2026', '10/07/2026', '12/07/2026', 'SIGAD-12345-2026', '531630 / 531631 / 531632', 'SIJ', 'Estudo', '2026', 'Separe valores por / no SIGAD Saída para subtarefas'],
+      ['Revisão de Portarias de Pessoal', 'Não Iniciada', 'Média', 'Cap. Oliveira', '02/07/2026', '15/07/2026', '', 'SIGAD-98765-2026', '', 'AJUR', 'Portaria', '2026', 'Campos vazios permanecem vazios']
     ];
 
     const csvContent = headers.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -285,16 +285,18 @@ export function TaskList() {
           }
 
           const entryDateRaw = getField(row, ['entrydate', 'data entrada', 'data de entrada', 'entrada']);
-          const entryDate = entryDateRaw ? parseDate(entryDateRaw) : new Date().toISOString().split('T')[0];
+          const entryDate = entryDateRaw ? parseDate(entryDateRaw) : undefined;
 
           const dueDateRaw = getField(row, ['duedate', 'prazo', 'vencimento', 'data limite']);
-          const dueDate = dueDateRaw ? parseDate(dueDateRaw) : new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0];
+          const dueDate = dueDateRaw ? parseDate(dueDateRaw) : '';
 
           const expeditedDateRaw = getField(row, ['expediteddate', 'data expedicao', 'data expedição', 'data expedido', 'expedido', 'termino', 'término', 'data termino', 'data término']);
           const expeditedDate = expeditedDateRaw ? parseDate(expeditedDateRaw) : undefined;
 
           const sigadOfRec = getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec']) ? String(getField(row, ['sigadrec', 'sigad de entrada', 'sigad entrada', 'sigadofrec', 'sigad rec'])).trim() : undefined;
-          const sigadOfExp = getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp']) ? String(getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp'])).trim() : undefined;
+          const rawSigadExp = getField(row, ['sigadexp', 'sigad de saida', 'sigad de saída', 'sigad saida', 'sigad saída', 'sigadofexp', 'sigad exp', 'sigadexpedido', 'sigad expedido']);
+          const sigadOfExp = rawSigadExp ? String(rawSigadExp).trim() : undefined;
+
           const origem = getField(row, ['origem', 'orgao de origem', 'órgão de origem']) ? String(getField(row, ['origem', 'orgao de origem', 'órgão de origem'])).trim() : undefined;
           const destination = getField(row, ['destino', 'orgao de destino', 'órgão de destino']) ? String(getField(row, ['destino', 'orgao de destino', 'órgão de destino'])).trim() : undefined;
           const documentType = getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento']) ? String(getField(row, ['documenttype', 'tipo', 'tipo de documento', 'tipo documento'])).trim() : undefined;
@@ -305,6 +307,36 @@ export function TaskList() {
           const finalSetor = ['AAJ', 'SIJ', 'AJUR'].includes(setorVal) 
             ? setorVal 
             : (matchedAssignee ? matchedAssignee.section : 'AAJ');
+
+          // Create Subtasks automatically from SIGAD EXP column if separated by '/'
+          let subtasksList: Task[] = [];
+          if (sigadOfExp && sigadOfExp.includes('/')) {
+            const sigadParts = sigadOfExp.split('/').map(s => s.trim()).filter(Boolean);
+            if (sigadParts.length > 0) {
+              subtasksList = sigadParts.map((partSigad, subIdx) => {
+                return {
+                  id: 'st_imp_' + Date.now() + '_' + subIdx + '_' + Math.random().toString(36).substr(2, 4),
+                  title: title,
+                  status: status,
+                  priority: priority,
+                  assignee: matchedAssignee!,
+                  entryDate: entryDate,
+                  dueDate: dueDate,
+                  expeditedDate: expeditedDate,
+                  sigadOfRec: sigadOfRec,
+                  sigadOfExp: partSigad,
+                  origem: origem,
+                  destination: destination,
+                  documentType: documentType,
+                  year: year,
+                  observations: observations,
+                  tags: [finalSetor],
+                  progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
+                  subtasks: []
+                };
+              });
+            }
+          }
 
           return {
             id: 't_imp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -324,13 +356,18 @@ export function TaskList() {
             observations,
             tags: [finalSetor],
             progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
-            subtasks: []
+            subtasks: subtasksList
           };
         });
 
         if (importedTasks.length > 0) {
           setTasks(prev => [...importedTasks, ...prev]);
-          alert(`${importedTasks.length} tarefas importadas com sucesso!`);
+          const totalSubtasksCreated = importedTasks.reduce((acc, t) => acc + (t.subtasks?.length || 0), 0);
+          if (totalSubtasksCreated > 0) {
+            alert(`${importedTasks.length} tarefas principais e ${totalSubtasksCreated} subtarefas criadas com sucesso!`);
+          } else {
+            alert(`${importedTasks.length} tarefas importadas com sucesso!`);
+          }
         } else {
           alert('Nenhuma tarefa válida encontrada no arquivo.');
         }
