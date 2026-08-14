@@ -261,7 +261,14 @@ export function TaskList() {
           return valStr;
         };
 
-        const importedTasks: Task[] = data.map((row: any, index: number) => {
+        let newTasksCount = 0;
+        let updatedTasksCount = 0;
+        let totalSubtasksCreated = 0;
+
+        // Process rows with deduplication against existing tasks
+        const updatedTasksState = [...tasks];
+
+        data.forEach((row: any, index: number) => {
           const title = String(getField(row, ['title', 'titulo', 'título', 'tarefa', 'assunto', 'subject', 'nome']) || `Tarefa Importada ${index + 1}`).trim();
           
           let status: Task['status'] = 'not-started';
@@ -318,69 +325,142 @@ export function TaskList() {
             ? setorVal 
             : (matchedAssignee ? matchedAssignee.section : 'AAJ');
 
-          const mainTaskId = generateUUID();
+          // Search for existing matching task in state to prevent duplicates
+          const existingIndex = updatedTasksState.findIndex(t => {
+            if (sigadOfRec && t.sigadOfRec && t.sigadOfRec.toLowerCase() === sigadOfRec.toLowerCase()) {
+              return true;
+            }
+            if (sigadOfExp && !sigadOfExp.includes('/') && t.sigadOfExp && t.sigadOfExp.toLowerCase() === sigadOfExp.toLowerCase()) {
+              return true;
+            }
+            if (t.title.toLowerCase() === title.toLowerCase() && t.entryDate === entryDate) {
+              return true;
+            }
+            return false;
+          });
 
-          // Create Subtasks automatically from SIGAD EXP column if separated by '/', ',', ';', or '\'
-          let subtasksList: Task[] = [];
-          if (sigadOfExp && (/[\/\,\;\\]/).test(sigadOfExp)) {
-            const sigadParts = sigadOfExp.split(/[\/\,\;\\]+/).map(s => s.trim()).filter(Boolean);
-            if (sigadParts.length > 0) {
-              subtasksList = sigadParts.map((partSigad) => {
-                return {
-                  id: generateUUID(),
-                  parentId: mainTaskId,
-                  title: title,
-                  status: status,
-                  priority: priority,
-                  assignee: matchedAssignee!,
-                  entryDate: entryDate,
-                  dueDate: dueDate,
-                  expeditedDate: expeditedDate,
-                  sigadOfRec: sigadOfRec,
-                  sigadOfExp: partSigad,
-                  origem: origem,
-                  destination: destination,
-                  documentType: documentType,
-                  year: year,
-                  observations: observations,
-                  tags: [finalSetor],
-                  progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
-                  subtasks: []
-                };
+          if (existingIndex >= 0) {
+            const existingTask = updatedTasksState[existingIndex];
+            const existingSubtasks = [...(existingTask.subtasks || [])];
+            
+            // Build subtasks list from SIGAD EXP split if separated by '/', ',', ';', '\'
+            if (sigadOfExp && (/[\/\,\;\\]/).test(sigadOfExp)) {
+              const sigadParts = sigadOfExp.split(/[\/\,\;\\]+/).map(s => s.trim()).filter(Boolean);
+              sigadParts.forEach((partSigad) => {
+                const subExists = existingSubtasks.some(st => 
+                  st.sigadOfExp && st.sigadOfExp.toLowerCase() === partSigad.toLowerCase()
+                );
+                if (!subExists) {
+                  existingSubtasks.push({
+                    id: generateUUID(),
+                    parentId: existingTask.id,
+                    title: title,
+                    status: status,
+                    priority: priority,
+                    assignee: matchedAssignee!,
+                    entryDate: entryDate,
+                    dueDate: dueDate,
+                    expeditedDate: expeditedDate,
+                    sigadOfRec: sigadOfRec,
+                    sigadOfExp: partSigad,
+                    origem: origem,
+                    destination: destination,
+                    documentType: documentType,
+                    year: year,
+                    observations: observations,
+                    tags: [finalSetor],
+                    progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
+                    subtasks: []
+                  });
+                  totalSubtasksCreated++;
+                }
               });
             }
-          }
 
-          return {
-            id: mainTaskId,
-            title,
-            status,
-            priority,
-            assignee: matchedAssignee,
-            entryDate,
-            dueDate,
-            expeditedDate,
-            sigadOfRec,
-            sigadOfExp,
-            origem,
-            destination,
-            documentType,
-            year,
-            observations,
-            tags: [finalSetor],
-            progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
-            subtasks: subtasksList
-          };
+            updatedTasksState[existingIndex] = {
+              ...existingTask,
+              title: title || existingTask.title,
+              status: status !== 'not-started' ? status : existingTask.status,
+              priority: priority || existingTask.priority,
+              assignee: matchedAssignee || existingTask.assignee,
+              entryDate: entryDate || existingTask.entryDate,
+              dueDate: dueDate || existingTask.dueDate,
+              expeditedDate: expeditedDate || existingTask.expeditedDate,
+              sigadOfRec: sigadOfRec || existingTask.sigadOfRec,
+              sigadOfExp: sigadOfExp || existingTask.sigadOfExp,
+              origem: origem || existingTask.origem,
+              destination: destination || existingTask.destination,
+              documentType: documentType || existingTask.documentType,
+              year: year || existingTask.year,
+              observations: observations || existingTask.observations,
+              subtasks: existingSubtasks
+            };
+            updatedTasksCount++;
+          } else {
+            // New Task
+            const mainTaskId = generateUUID();
+            let subtasksList: Task[] = [];
+            if (sigadOfExp && (/[\/\,\;\\]/).test(sigadOfExp)) {
+              const sigadParts = sigadOfExp.split(/[\/\,\;\\]+/).map(s => s.trim()).filter(Boolean);
+              if (sigadParts.length > 0) {
+                subtasksList = sigadParts.map((partSigad) => {
+                  totalSubtasksCreated++;
+                  return {
+                    id: generateUUID(),
+                    parentId: mainTaskId,
+                    title: title,
+                    status: status,
+                    priority: priority,
+                    assignee: matchedAssignee!,
+                    entryDate: entryDate,
+                    dueDate: dueDate,
+                    expeditedDate: expeditedDate,
+                    sigadOfRec: sigadOfRec,
+                    sigadOfExp: partSigad,
+                    origem: origem,
+                    destination: destination,
+                    documentType: documentType,
+                    year: year,
+                    observations: observations,
+                    tags: [finalSetor],
+                    progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
+                    subtasks: []
+                  };
+                });
+              }
+            }
+
+            updatedTasksState.unshift({
+              id: mainTaskId,
+              title,
+              status,
+              priority,
+              assignee: matchedAssignee,
+              entryDate,
+              dueDate,
+              expeditedDate,
+              sigadOfRec,
+              sigadOfExp,
+              origem,
+              destination,
+              documentType,
+              year,
+              observations,
+              tags: [finalSetor],
+              progress: status === 'completed' ? 100 : status === 'in-progress' ? 50 : 0,
+              subtasks: subtasksList
+            });
+            newTasksCount++;
+          }
         });
 
-        if (importedTasks.length > 0) {
-          setTasks(prev => [...importedTasks, ...prev]);
-          const totalSubtasksCreated = importedTasks.reduce((acc, t) => acc + (t.subtasks?.length || 0), 0);
-          if (totalSubtasksCreated > 0) {
-            alert(`${importedTasks.length} tarefas principais e ${totalSubtasksCreated} subtarefas criadas com sucesso!`);
-          } else {
-            alert(`${importedTasks.length} tarefas importadas com sucesso!`);
-          }
+        if (newTasksCount > 0 || updatedTasksCount > 0) {
+          setTasks(updatedTasksState);
+          let msg = '';
+          if (newTasksCount > 0) msg += `${newTasksCount} nova(s) tarefa(s) criada(s). `;
+          if (updatedTasksCount > 0) msg += `${updatedTasksCount} tarefa(s) existente(s) atualizada(s) sem duplicar. `;
+          if (totalSubtasksCreated > 0) msg += `${totalSubtasksCreated} subtarefa(s) vinculada(s).`;
+          alert(msg.trim());
         } else {
           alert('Nenhuma tarefa válida encontrada no arquivo.');
         }
