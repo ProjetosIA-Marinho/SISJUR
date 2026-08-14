@@ -42,8 +42,8 @@ export function Dashboard() {
     return found ? found.toUpperCase() : 'AAJ';
   };
 
-  // Filter tasks based on selected year and section access
-  const filteredTasks = TASKS.filter(task => {
+  // Filter root tasks based on selected year and section access
+  const rootFilteredTasks = TASKS.filter(task => {
     if (task.documentType === 'holiday' || task.documentType === 'routine') return false;
     if (USER_ME.accessLevel !== 'gestor') {
       const taskSector = getSector(task);
@@ -53,6 +53,23 @@ export function Dashboard() {
     const taskYear = task.year || (task.entryDate ? task.entryDate.split('-')[0] : '');
     return taskYear === selectedYear;
   });
+
+  // Flatten tasks + subtasks so subtasks are included in all Dashboard metrics
+  const filteredTasks = React.useMemo(() => {
+    const list: typeof TASKS = [];
+    rootFilteredTasks.forEach(task => {
+      list.push(task);
+      if (task.subtasks && task.subtasks.length > 0) {
+        task.subtasks.forEach(st => {
+          list.push({
+            ...st,
+            tags: (st.tags && st.tags.length > 0) ? st.tags : task.tags
+          });
+        });
+      }
+    });
+    return list;
+  }, [rootFilteredTasks]);
 
   // Calculate dynamic metrics
   const totalTasks = filteredTasks.length;
