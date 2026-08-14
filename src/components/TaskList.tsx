@@ -666,7 +666,7 @@ export function TaskList() {
     return filteredTasks.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredTasks, currentPage, itemsPerPage]);
 
-  // Calculate dynamic counts based on the stateful tasks
+  // Calculate dynamic counts based on the stateful tasks (tarefas principais)
   const stats = React.useMemo(() => {
     let total = 0;
     let completed = 0;
@@ -675,26 +675,21 @@ export function TaskList() {
     let notStarted = 0;
     let suspended = 0;
 
-    tasks.forEach(t => {
-      // Main task
+    const accessibleTasks = tasks.filter(t => {
+      if (USER_ME.accessLevel !== 'gestor') {
+        const taskSector = getSector(t);
+        if (taskSector !== USER_ME.section) return false;
+      }
+      return true;
+    });
+
+    accessibleTasks.forEach(t => {
       total++;
       if (t.status === 'completed') completed++;
       else if (t.status === 'in-progress') inProgress++;
       else if (t.status === 'delayed') delayed++;
       else if (t.status === 'not-started') notStarted++;
       else if (t.status === 'suspended') suspended++;
-
-      // Subtasks (tarefas relacionadas)
-      if (t.subtasks && t.subtasks.length > 0) {
-        t.subtasks.forEach(st => {
-          total++;
-          if (st.status === 'completed') completed++;
-          else if (st.status === 'in-progress') inProgress++;
-          else if (st.status === 'delayed') delayed++;
-          else if (st.status === 'not-started') notStarted++;
-          else if (st.status === 'suspended') suspended++;
-        });
-      }
     });
 
     return { total, completed, inProgress, delayed, notStarted, suspended };
