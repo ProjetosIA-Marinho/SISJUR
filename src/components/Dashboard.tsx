@@ -1,10 +1,10 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   TrendingUp, AlertCircle, Users, CheckCircle2, MoreHorizontal, 
   ArrowRight, Clock, Filter, Search, Shield, FileText, 
   CheckCircle, ListTodo, ClipboardList, Layers, AlertTriangle, HelpCircle,
-  Scale, MessageSquare, Send, File
+  Scale, MessageSquare, Send, File, X
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -18,6 +18,14 @@ export function Dashboard() {
   const { tasks: TASKS, team: TEAM } = useData();
   const [selectedYear, setSelectedYear] = React.useState<string>('Todos');
   const [memberSearch, setMemberSearch] = React.useState('');
+
+  // State for KPI card task list modal
+  const [cardModalData, setCardModalData] = React.useState<{
+    type: 'prazos' | 'ativas' | 'totais' | 'concluidas';
+    title: string;
+    subtitle: string;
+    tasks: typeof TASKS;
+  } | null>(null);
 
   // Year filter logic (dynamically computed from tasks)
   const years = React.useMemo(() => {
@@ -183,6 +191,56 @@ export function Dashboard() {
     { name: 'S', quantidade: weeklyCounts[6], dayOfWeek: 6, fullName: 'Sábado' },
   ];
 
+  const handleCardClick = (type: 'prazos' | 'ativas' | 'totais' | 'concluidas') => {
+    if (type === 'prazos') {
+      const prazosTasks = (filteredTasks || []).filter(t => {
+        if (t.status === 'completed') return false;
+        if (t.priority === 'urgent' || t.priority === 'high' || t.status === 'delayed') return true;
+        if (t.dueDate) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const parts = t.dueDate.split('-').map(Number);
+          if (parts.length === 3) {
+            const due = new Date(parts[0], parts[1] - 1, parts[2]);
+            due.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays <= 5) return true;
+          }
+        }
+        return false;
+      });
+      setCardModalData({
+        type: 'prazos',
+        title: 'Tarefas com Prazos Próximos e Urgentes',
+        subtitle: `${prazosTasks.length} tarefa(s) requerem atenção ou têm prazo crítico/alto`,
+        tasks: prazosTasks
+      });
+    } else if (type === 'ativas') {
+      const ativasList = (filteredTasks || []).filter(t => t.status !== 'completed');
+      setCardModalData({
+        type: 'ativas',
+        title: 'Tarefas Ativas em Andamento',
+        subtitle: `${ativasList.length} tarefa(s) ativas cadastradas`,
+        tasks: ativasList
+      });
+    } else if (type === 'totais') {
+      setCardModalData({
+        type: 'totais',
+        title: 'Todas as Tarefas Cadastradas',
+        subtitle: `${(filteredTasks || []).length} tarefa(s) totais registradas`,
+        tasks: filteredTasks || []
+      });
+    } else if (type === 'concluidas') {
+      const concluidasList = (filteredTasks || []).filter(t => t.status === 'completed');
+      setCardModalData({
+        type: 'concluidas',
+        title: 'Tarefas Concluídas',
+        subtitle: `${concluidasList.length} tarefa(s) finalizadas com sucesso`,
+        tasks: concluidasList
+      });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header section with Year Filter */}
@@ -221,6 +279,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { 
+            type: 'ativas' as const,
             label: 'Tarefas Ativas', 
             value: activeTasks.toString().padStart(2, '0'), 
             trend: 'Em andamento', 
@@ -229,6 +288,7 @@ export function Dashboard() {
             bg: 'bg-white/70 dark:bg-slate-900/60' 
           },
           { 
+            type: 'prazos' as const,
             label: 'Prazos Próximos', 
             value: urgentTasks.toString().padStart(2, '0'), 
             trend: 'Crítico/Alto', 
@@ -237,6 +297,7 @@ export function Dashboard() {
             bg: 'bg-white/70 dark:bg-slate-900/60' 
           },
           { 
+            type: 'totais' as const,
             label: 'Tarefas Totais', 
             value: totalTasks.toString().padStart(2, '0'), 
             trend: 'Cadastradas', 
@@ -245,6 +306,7 @@ export function Dashboard() {
             bg: 'bg-secondary-container dark:bg-slate-800' 
           },
           { 
+            type: 'concluidas' as const,
             label: 'Tarefas Concluídas', 
             value: completedTasks.toString().padStart(2, '0'), 
             trend: `${totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}% Conclusão`, 
@@ -258,21 +320,27 @@ export function Dashboard() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
+            onClick={() => handleCardClick(card.type)}
             className={cn(
-              "glass-card p-6 rounded-[2rem] flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-lg border border-white/50 dark:border-slate-800/50",
+              "glass-card p-6 rounded-[2rem] flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-lg border border-white/50 dark:border-slate-800/50 cursor-pointer group",
               card.bg
             )}
           >
             <div className="flex justify-between items-start">
-              <span className={cn("font-bold text-[10px] uppercase tracking-widest", card.bg.includes('secondary') ? 'text-on-secondary-container/70 dark:text-slate-300' : 'text-on-surface-variant/90 dark:text-slate-400')}>
+              <span className={cn("font-bold text-[10px] uppercase tracking-widest group-hover:text-primary transition-colors", card.bg.includes('secondary') ? 'text-on-secondary-container/70 dark:text-slate-300' : 'text-on-surface-variant/90 dark:text-slate-400')}>
                 {card.label}
               </span>
               <card.icon size={20} className={card.bg.includes('secondary') ? 'text-on-secondary-container dark:text-amber-400' : card.color} />
             </div>
-            <div className="mt-5 flex items-baseline gap-2">
-              <span className="text-4xl font-black text-on-surface tracking-tight">{card.value}</span>
-              <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10", card.color)}>
-                {card.trend}
+            <div className="mt-5 flex items-baseline justify-between">
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black text-on-surface tracking-tight">{card.value}</span>
+                <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10", card.color)}>
+                  {card.trend}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                Ver lista &rarr;
               </span>
             </div>
           </motion.div>
@@ -616,6 +684,119 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* KPI Card Tasks List Modal */}
+      <AnimatePresence>
+        {cardModalData && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 border border-surface-container-high dark:border-slate-800 rounded-[2.5rem] p-8 w-full max-w-3xl shadow-2xl text-left max-h-[85vh] flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex justify-between items-center pb-4 mb-4 border-b border-surface-container-high dark:border-slate-800">
+                <div>
+                  <h3 className="font-black text-xl text-primary">
+                    {cardModalData.title}
+                  </h3>
+                  <p className="text-xs font-medium text-on-surface-variant mt-1">
+                    {cardModalData.subtitle}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setCardModalData(null)}
+                  className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Tasks List */}
+              <div className="flex-grow overflow-y-auto space-y-3.5 pr-2 custom-scrollbar">
+                {cardModalData.tasks.length === 0 ? (
+                  <div className="py-16 text-center flex flex-col items-center justify-center opacity-70">
+                    <CheckCircle2 size={56} className="text-emerald-500 mb-3 stroke-[1.5]" />
+                    <p className="text-base font-bold text-primary">Nenhuma tarefa encontrada nesta categoria</p>
+                    <p className="text-xs text-on-surface-variant mt-1">Não há pendências a exibir no momento.</p>
+                  </div>
+                ) : (
+                  cardModalData.tasks.map((task) => {
+                    const assignee = task.assignee;
+                    return (
+                      <div
+                        key={task.id}
+                        className="p-4 rounded-2xl border border-surface-container-high dark:border-slate-800 bg-surface-container-low/40 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                      >
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md text-white",
+                              task.priority === 'urgent' ? "bg-red-600" :
+                              task.priority === 'high' ? "bg-red-500" :
+                              task.priority === 'medium' ? "bg-amber-500" :
+                              "bg-emerald-500"
+                            )}>
+                              Prioridade {task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
+                            </span>
+
+                            <span className={cn(
+                              "text-[9px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider",
+                              task.status === 'completed' ? "bg-emerald-500/10 text-emerald-600" :
+                              task.status === 'in-progress' ? "bg-blue-500/10 text-blue-600" :
+                              task.status === 'delayed' ? "bg-red-500/10 text-red-600 animate-pulse" :
+                              "bg-slate-500/10 text-slate-600"
+                            )}>
+                              {task.status === 'completed' ? 'Concluída' : task.status === 'in-progress' ? 'Em Andamento' : task.status === 'delayed' ? 'Atrasada' : 'Não Iniciada'}
+                            </span>
+
+                            {task.dueDate && (
+                              <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Clock size={10} /> Prazo: {task.dueDate.split('-').reverse().join('/')}
+                              </span>
+                            )}
+
+                            {task.sigadOfRec && (
+                              <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                SIGAD REC: {task.sigadOfRec}
+                              </span>
+                            )}
+                            {task.sigadOfExp && (
+                              <span className="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                SIGAD EXP: {task.sigadOfExp}
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="font-black text-sm text-primary leading-snug">
+                            {task.title}
+                          </h4>
+
+                          {task.description && (
+                            <p className="text-xs text-on-surface-variant mt-1.5 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+
+                          {assignee && (
+                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-black/5 dark:border-white/5">
+                              <img src={assignee.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(assignee.name)}&background=random`} className="w-5 h-5 rounded-full object-cover" alt="" />
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                {assignee.name} ({assignee.role})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
