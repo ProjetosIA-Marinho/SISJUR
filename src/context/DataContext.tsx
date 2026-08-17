@@ -518,24 +518,54 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteTask = async (id: string) => {
-    // Optimistically remove from state
-    setTasks(prev => prev.filter(t => t.id !== id));
+    const targetTask = tasks.find(t => t.id === id);
+
+    // Optimistically remove task and its subtasks from state
+    setTasks(prev => prev.filter(t => t.id !== id && t.parentId !== id));
 
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       try {
         const { error } = await supabase
           .from('tasks')
           .delete()
-          .eq('id', id);
+          .or(`id.eq.${id},parent_id.eq.${id}`);
         if (error) console.error('Supabase task delete error:', error);
       } catch (err) {
         console.error('Failed to delete task from Supabase, removing from localStorage:', err);
       }
     }
 
-    const localTasks = getLocalData<Task[]>('sisjur_tasks', mockTasks);
-    const updatedTasks = localTasks.filter(t => t.id !== id);
+    const localTasks = getLocalData<Task[]>('sisjur_tasks', []);
+    const updatedTasks = localTasks.filter(t => {
+      if (t.id === id || t.parentId === id) return false;
+      if (targetTask && t.title && t.title.toLowerCase().trim() === targetTask.title.toLowerCase().trim()) return false;
+      return true;
+    });
     setLocalData('sisjur_tasks', updatedTasks);
+
+    try {
+      const storedHistory = localStorage.getItem('sisjur_backups_history');
+      if (storedHistory) {
+        const history = JSON.parse(storedHistory);
+        const updatedHistory = history.map((b: any) => {
+          if (Array.isArray(b.tasks)) {
+            return {
+              ...b,
+              tasks: b.tasks.filter((t: any) => {
+                if (t.id === id || t.parentId === id) return false;
+                if (targetTask && t.title && t.title.toLowerCase().trim() === targetTask.title.toLowerCase().trim()) return false;
+                return true;
+              })
+            };
+          }
+          return b;
+        });
+        localStorage.setItem('sisjur_backups_history', JSON.stringify(updatedHistory));
+      }
+    } catch (e) {
+      console.error('Error updating backup history on delete:', e);
+    }
+
     await refreshAll();
   };
 

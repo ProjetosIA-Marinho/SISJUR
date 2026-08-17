@@ -667,7 +667,7 @@ export function TaskList() {
     setEditingTask(undefined);
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
     const taskToDelete = tasks.find(t => t.id === id);
     if (!taskToDelete) return;
 
@@ -680,10 +680,10 @@ export function TaskList() {
       return;
     }
 
-    setTasks(prev => prev.filter(t => t.id !== id));
+    await deleteTask(id);
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     // Filter out items that the user doesn't have permission to delete
     const deletableIds = selectedTasks.filter(id => {
       const t = tasks.find(x => x.id === id);
@@ -697,7 +697,9 @@ export function TaskList() {
       alert('Algumas tarefas selecionadas foram ignoradas pois você não tem permissão para excluí-las.');
     }
 
-    setTasks(prev => prev.filter(t => !deletableIds.includes(t.id)));
+    for (const id of deletableIds) {
+      await deleteTask(id);
+    }
     setSelectedTasks([]);
   };
 
