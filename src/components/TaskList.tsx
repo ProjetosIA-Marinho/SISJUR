@@ -714,7 +714,9 @@ export function TaskList() {
       // 0. Section Access Filter
       if (USER_ME.accessLevel !== 'gestor') {
         const taskSector = getSector(task);
-        if (taskSector !== USER_ME.section) return false;
+        const matchesMainSection = taskSector === USER_ME.section || task.assignee?.id === USER_ME.id;
+        const matchesSubtaskSection = task.subtasks?.some(st => st.assignee?.section === USER_ME.section || st.assignee?.id === USER_ME.id);
+        if (!matchesMainSection && !matchesSubtaskSection) return false;
       }
 
       if (activeFilters.status) {
@@ -724,8 +726,12 @@ export function TaskList() {
           return false;
         }
       }
-      if (activeFilters.priority && task.priority !== activeFilters.priority) {
-        return false;
+      if (activeFilters.priority) {
+        const matchesMain = task.priority === activeFilters.priority;
+        const matchesSubtasks = task.subtasks?.some(st => st.priority === activeFilters.priority);
+        if (!matchesMain && !matchesSubtasks) {
+          return false;
+        }
       }
       if (activeFilters.assignee) {
         const matchesMain = task.assignee?.id === activeFilters.assignee;
@@ -734,8 +740,12 @@ export function TaskList() {
           return false;
         }
       }
-      if (activeFilters.documentType && task.documentType !== activeFilters.documentType) {
-        return false;
+      if (activeFilters.documentType) {
+        const matchesMain = task.documentType === activeFilters.documentType;
+        const matchesSubtasks = task.subtasks?.some(st => st.documentType === activeFilters.documentType);
+        if (!matchesMain && !matchesSubtasks) {
+          return false;
+        }
       }
       if (activeFilters.sigadOfRec && !(task.sigadOfRec || '').toLowerCase().includes(activeFilters.sigadOfRec.toLowerCase())) {
         return false;
@@ -1158,7 +1168,21 @@ export function TaskList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-container-low">
-              {paginatedTasks.map((task) => (
+              {paginatedTasks.map((task) => {
+                const matchesFilterSubtask = !!(
+                  (activeFilters.assignee && task.subtasks?.some(st => st.assignee?.id === activeFilters.assignee)) ||
+                  (activeFilters.status && task.subtasks?.some(st => st.status === activeFilters.status)) ||
+                  (activeFilters.priority && task.subtasks?.some(st => st.priority === activeFilters.priority)) ||
+                  (activeFilters.documentType && task.subtasks?.some(st => st.documentType === activeFilters.documentType)) ||
+                  (activeFilters.search && task.subtasks?.some(st => 
+                    st.title.toLowerCase().includes(activeFilters.search.toLowerCase()) ||
+                    (st.sigadOfExp || '').toLowerCase().includes(activeFilters.search.toLowerCase()) ||
+                    (st.assignee?.name || '').toLowerCase().includes(activeFilters.search.toLowerCase())
+                  ))
+                );
+                const isRowExpanded = expandedTasks.includes(task.id) || matchesFilterSubtask;
+
+                return (
                 <React.Fragment key={task.id}>
                   <tr 
                     id={`task-row-${task.id}`}
@@ -1183,7 +1207,7 @@ export function TaskList() {
                           onClick={() => toggleExpandTask(task.id)}
                           className="mt-1 p-1 hover:bg-surface-container rounded-lg transition-all text-on-surface-variant"
                         >
-                          {expandedTasks.includes(task.id) ? <ChevronDown size={16} /> : <ChevronRightIcon size={16} />}
+                          {isRowExpanded ? <ChevronDown size={16} /> : <ChevronRightIcon size={16} />}
                         </button>
                         <div className="space-y-1">
                           <p 
@@ -1328,7 +1352,7 @@ export function TaskList() {
 
                   {/* Subtasks Hierarchy (Expanded) */}
                   <AnimatePresence>
-                    {expandedTasks.includes(task.id) && (
+                    {isRowExpanded && (
                       <motion.tr 
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -1673,8 +1697,16 @@ export function TaskList() {
                               {task.subtasks && task.subtasks.length > 0 ? (
                                 task.subtasks.map((st) => {
                                   const isSelected = (selectedSubtasks[task.id] || []).includes(st.id);
+                                  const matchesAssignee = activeFilters.assignee && st.assignee?.id === activeFilters.assignee;
+                                  const matchesStatus = activeFilters.status && st.status === activeFilters.status;
+                                  const isMatched = matchesAssignee || matchesStatus;
                                   return (
-                                    <div key={st.id} className="p-4 bg-white/60 dark:bg-slate-900/60 hover:bg-white/90 dark:hover:bg-slate-800/80 backdrop-blur-md rounded-2xl border border-surface-container-high/40 dark:border-slate-800/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                                    <div key={st.id} className={cn(
+                                      "p-4 rounded-2xl border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all",
+                                      isMatched 
+                                        ? "bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/50 shadow-md ring-2 ring-amber-500/30" 
+                                        : "bg-white/60 dark:bg-slate-900/60 hover:bg-white/90 dark:hover:bg-slate-800/80 backdrop-blur-md border-surface-container-high/40 dark:border-slate-800/60"
+                                    )}>
                                       <div className="flex items-start gap-3">
                                         <input 
                                           type="checkbox"
@@ -1747,7 +1779,8 @@ export function TaskList() {
                     )}
                   </AnimatePresence>
                 </React.Fragment>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>
