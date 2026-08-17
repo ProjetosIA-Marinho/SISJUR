@@ -48,6 +48,8 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
       }
     });
 
+export const checkUUID = (val?: string) => val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
+
 // Map database column names to camelCase for Task
 export function mapTaskFromDb(row: any): Task {
   return {
@@ -96,7 +98,6 @@ export function mapTaskFromDb(row: any): Task {
 
 export function mapTaskToDb(task: Partial<Task>): any {
   const dbObj: any = {};
-  const checkUUID = (val?: string) => val ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val) : false;
 
   if (task.id !== undefined && checkUUID(task.id)) dbObj.id = task.id;
   if (task.title !== undefined) dbObj.title = task.title;
@@ -104,8 +105,10 @@ export function mapTaskToDb(task: Partial<Task>): any {
   if (task.status !== undefined) dbObj.status = task.status;
   if (task.priority !== undefined) dbObj.priority = task.priority;
   if (task.dueDate !== undefined) dbObj.due_date = task.dueDate;
-  if (task.assignee !== undefined) {
-    dbObj.assignee_id = checkUUID(task.assignee.id) ? task.assignee.id : null;
+  if (task.assignee !== undefined && task.assignee.id) {
+    if (checkUUID(task.assignee.id)) {
+      dbObj.assignee_id = task.assignee.id;
+    }
   }
   if (task.progress !== undefined) dbObj.progress = task.progress;
   if (task.sigadOfRec !== undefined) dbObj.sigad_of_rec = task.sigadOfRec;

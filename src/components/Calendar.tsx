@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Plus, Users, Calendar as CalendarIcon, AlertTriangle, X, Check } from 'lucide-react';
 import { USER_ME } from '../data';
-import { cn } from '../lib/utils';
+import { cn, generateUUID } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../context/DataContext';
 import { Task, TaskPriority } from '../types';
@@ -266,7 +266,7 @@ export function Calendar() {
       }
     } else {
       const newEvent: Task = {
-        id: `task-${Date.now()}`,
+        id: generateUUID(),
         title: newTitle,
         description: '',
         status: 'not-started',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, ChevronDown, UserPlus, Filter, Shield, FileText, Scale, Send, File, X, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { cn } from '../lib/utils';
+import { cn, generateUUID } from '../lib/utils';
 import { USER_ME } from '../data';
 import { User, Task } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
@@ -158,7 +158,7 @@ export function Reports() {
 
       // Always update localStorage as fallback/cache
       const newUserObj: User = {
-        id: `u-${Date.now()}`,
+        id: generateUUID(),
         name: newUserName,
         role: newUserRole,
         avatar: newUserAvatar || `https://images.unsplash.com/photo-1535713875002?w=100&h=100&fit=crop&q=80`,

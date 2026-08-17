@@ -1,7 +1,8 @@
 import React from 'react';
 import { Plus, CheckCircle2, Clock, AlertTriangle, ChevronLeft, ChevronRight, AlertCircle, FileUp, FileDown, MoreHorizontal, Trash2, Edit3, ChevronDown, ChevronRight as ChevronRightIcon, Layers, CheckSquare, X, Eye, Calendar, Tag, User, FileText, Bookmark, Info, ExternalLink } from 'lucide-react';
 import { TEAM as STATIC_TEAM, USER_ME } from '../data';
-import { cn } from '../lib/utils';
+import { cn, generateUUID } from '../lib/utils';
+import { checkUUID } from '../lib/supabase';
 import { TaskFilters } from './TaskFilters';
 import { TaskForm } from './TaskForm';
 import { Task } from '../types';
@@ -11,16 +12,6 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useData } from '../context/DataContext';
-
-const generateUUID = (): string => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
 
 export function TaskList() {
   const { tasks: dbTasks, team: TEAM, addTask, updateTask, deleteTask } = useData();
@@ -626,7 +617,7 @@ export function TaskList() {
     );
   };
 
-  const handleSaveTask = (taskData: Partial<Task>) => {
+  const handleSaveTask = async (taskData: Partial<Task>) => {
     const targetAssignee = taskData.assignee || USER_ME;
 
     // Permissions check
@@ -647,14 +638,30 @@ export function TaskList() {
     }
 
     if (editingTask) {
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...taskData } as Task : t));
+      const updatedTask: Task = { ...editingTask, ...taskData } as Task;
+      await updateTask(updatedTask);
+      if (taskData.subtasks && taskData.subtasks.length > 0) {
+        for (const st of taskData.subtasks) {
+          const stId = checkUUID(st.id) ? st.id : generateUUID();
+          await addTask({ ...st, id: stId, parentId: updatedTask.id });
+        }
+      }
     } else {
+      const newTaskId = generateUUID();
       const newTask: Task = {
         ...taskData,
-        id: 't' + Date.now(),
+        id: newTaskId,
         progress: taskData.status === 'completed' ? 100 : taskData.status === 'in-progress' ? 50 : 0,
       } as Task;
-      setTasks(prev => [newTask, ...prev]);
+
+      await addTask(newTask);
+
+      if (taskData.subtasks && taskData.subtasks.length > 0) {
+        for (const st of taskData.subtasks) {
+          const stId = checkUUID(st.id) ? st.id : generateUUID();
+          await addTask({ ...st, id: stId, parentId: newTaskId });
+        }
+      }
     }
     setIsAddingTask(false);
     setEditingTask(undefined);
@@ -1364,13 +1371,14 @@ export function TaskList() {
 
                             {/* Quick Add Inline Form */}
                             <form 
-                              onSubmit={(e) => {
+                              onSubmit={async (e) => {
                                  e.preventDefault();
                                  const form = quickSubtaskForms[task.id] || { title: '', assigneeId: USER_ME.id, status: 'not-started', entryDate: new Date().toISOString().split('T')[0], expeditedDate: '', sigadOfRec: '', sigadOfExp: '', dueDate: '', destination: '', documentType: 'Ofício' };
                                  if (!form.title.trim()) return;
 
                                  const newSub: Task = {
-                                   id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                                   id: generateUUID(),
+                                   parentId: task.id,
                                    title: form.title,
                                    status: form.status as any,
                                    priority: 'medium',
@@ -1386,15 +1394,7 @@ export function TaskList() {
                                    subtasks: [],
                                  };
 
-                                 setTasks(prev => prev.map(t => {
-                                   if (t.id === task.id) {
-                                     return {
-                                       ...t,
-                                       subtasks: [...(t.subtasks || []), newSub]
-                                     };
-                                   }
-                                   return t;
-                                 }));
+                                 await addTask(newSub);
 
                                  // Reset form
                                  setQuickSubtaskForms(prev => ({

@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Save, Plus, Trash2, Paperclip, Calendar, ShieldCheck, FileText, User as UserIcon, AlertTriangle, Edit3 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, User } from '../types';
 import { USER_ME } from '../data';
-import { cn } from '../lib/utils';
+import { cn, generateUUID } from '../lib/utils';
 import { CustomSelect } from './CustomSelect';
 import { useData } from '../context/DataContext';
 
@@ -169,7 +169,7 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
       } else {
         // Add new subtask
         const newSubtask: Task = {
-          id: `st-${Date.now()}`,
+          id: generateUUID(),
           title: subtaskForm.title,
           status: subtaskForm.status || 'not-started',
           priority: subtaskForm.priority || 'low',
