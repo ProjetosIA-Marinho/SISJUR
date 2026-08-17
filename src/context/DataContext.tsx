@@ -85,7 +85,78 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        const allTasks = allTasksData.map(mapTaskFromDb);
+        let allTasks = allTasksData.map(mapTaskFromDb);
+
+        // Auto-recover tasks saved in localStorage or backup history missing from Supabase
+        try {
+          const localSavedTasks = getLocalData<Task[]>('sisjur_tasks', []);
+          const backupsHistory = getLocalData<any[]>('sisjur_backups_history', []);
+          
+          const candidateLocalTasks: Task[] = [...localSavedTasks];
+          backupsHistory.forEach(b => {
+            if (Array.isArray(b.tasks)) {
+              candidateLocalTasks.push(...b.tasks);
+            }
+          });
+
+          const existingTitlesOrSigads = new Set<string>();
+          allTasks.forEach(t => {
+            if (t.sigadOfRec) existingTitlesOrSigads.add('rec:' + t.sigadOfRec.toLowerCase().trim());
+            if (t.sigadOfExp) existingTitlesOrSigads.add('exp:' + t.sigadOfExp.toLowerCase().trim());
+            if (t.title) existingTitlesOrSigads.add('title:' + t.title.toLowerCase().trim());
+          });
+
+          for (const locTask of candidateLocalTasks) {
+            if (!locTask || !locTask.title) continue;
+            
+            const titleKey = 'title:' + locTask.title.toLowerCase().trim();
+            const recKey = locTask.sigadOfRec ? 'rec:' + locTask.sigadOfRec.toLowerCase().trim() : null;
+            const expKey = locTask.sigadOfExp ? 'exp:' + locTask.sigadOfExp.toLowerCase().trim() : null;
+
+            const alreadyInDb = existingTitlesOrSigads.has(titleKey) || 
+              (recKey && existingTitlesOrSigads.has(recKey)) ||
+              (expKey && existingTitlesOrSigads.has(expKey));
+
+            if (!alreadyInDb) {
+              const validId = checkUUID(locTask.id) ? locTask.id : generateUUID();
+              const recoveredTask: Task = {
+                ...locTask,
+                id: validId,
+                subtasks: []
+              };
+
+              allTasks.push(recoveredTask);
+              existingTitlesOrSigads.add(titleKey);
+              if (recKey) existingTitlesOrSigads.add(recKey);
+              if (expKey) existingTitlesOrSigads.add(expKey);
+
+              // Upload recovered main task to Supabase
+              const dbObj = mapTaskToDb(recoveredTask);
+              supabase.from('tasks').insert(dbObj).then(({ error }) => {
+                if (error) console.warn('Auto recovery upload notice for task:', locTask.title, error);
+              });
+
+              // Recover subtasks if present
+              if (locTask.subtasks && locTask.subtasks.length > 0) {
+                for (const sub of locTask.subtasks) {
+                  const validSubId = checkUUID(sub.id) ? sub.id : generateUUID();
+                  const recoveredSub: Task = {
+                    ...sub,
+                    id: validSubId,
+                    parentId: validId
+                  };
+                  allTasks.push(recoveredSub);
+                  const dbSubObj = mapTaskToDb(recoveredSub);
+                  supabase.from('tasks').insert(dbSubObj).then(({ error }) => {
+                    if (error) console.warn('Auto recovery upload notice for subtask:', sub.title, error);
+                  });
+                }
+              }
+            }
+          }
+        } catch (recoveryErr) {
+          console.error('Error during automatic task recovery:', recoveryErr);
+        }
 
         // Fetch Projects
         const { data: projectsData, error: projectsError } = await supabase
