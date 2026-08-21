@@ -429,8 +429,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateTask = async (task: Task) => {
-    // Optimistically update state
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...task } : t));
+    // Optimistically update state (including subtasks)
+    setTasks(prev => {
+      const updateNode = (t: Task): Task => {
+        if (t.id === task.id) return { ...t, ...task };
+        if (t.subtasks && t.subtasks.length > 0) {
+          return { ...t, subtasks: t.subtasks.map(updateNode) };
+        }
+        return t;
+      };
+      return prev.map(updateNode);
+    });
 
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       try {

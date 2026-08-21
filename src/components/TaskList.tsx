@@ -643,7 +643,12 @@ export function TaskList() {
       if (taskData.subtasks && taskData.subtasks.length > 0) {
         for (const st of taskData.subtasks) {
           const stId = checkUUID(st.id) ? st.id : generateUUID();
-          await addTask({ ...st, id: stId, parentId: updatedTask.id });
+          const existingSubtask = dbTasks?.find(t => t.id === stId);
+          if (existingSubtask) {
+            await updateTask({ ...st, id: stId, parentId: updatedTask.id } as Task);
+          } else {
+            await addTask({ ...st, id: stId, parentId: updatedTask.id } as Task);
+          }
         }
       }
     } else {
@@ -659,7 +664,12 @@ export function TaskList() {
       if (taskData.subtasks && taskData.subtasks.length > 0) {
         for (const st of taskData.subtasks) {
           const stId = checkUUID(st.id) ? st.id : generateUUID();
-          await addTask({ ...st, id: stId, parentId: newTaskId });
+          const existingSubtask = dbTasks?.find(t => t.id === stId);
+          if (existingSubtask) {
+            await updateTask({ ...st, id: stId, parentId: newTaskId } as Task);
+          } else {
+            await addTask({ ...st, id: stId, parentId: newTaskId } as Task);
+          }
         }
       }
     }
