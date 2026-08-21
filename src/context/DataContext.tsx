@@ -486,8 +486,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const deleteTask = async (id: string) => {
     const targetTask = tasks.find(t => t.id === id);
 
-    // Optimistically remove task and its subtasks from state
-    setTasks(prev => prev.filter(t => t.id !== id && t.parentId !== id));
+    // Optimistically update state (including subtasks)
+    setTasks(prev => {
+      const removeNode = (taskList: Task[]): Task[] => {
+        return taskList.filter(t => t.id !== id && t.parentId !== id).map(t => {
+          if (t.subtasks && t.subtasks.length > 0) {
+            return { ...t, subtasks: removeNode(t.subtasks) };
+          }
+          return t;
+        });
+      };
+      return removeNode(prev);
+    });
 
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       try {

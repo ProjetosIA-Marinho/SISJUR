@@ -678,7 +678,18 @@ export function TaskList() {
   };
 
   const handleDeleteTask = async (id: string) => {
-    const taskToDelete = tasks.find(t => t.id === id);
+    const findTask = (taskList: Task[]): Task | undefined => {
+      for (const t of taskList) {
+        if (t.id === id) return t;
+        if (t.subtasks && t.subtasks.length > 0) {
+          const found = findTask(t.subtasks);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    
+    const taskToDelete = findTask(tasks);
     if (!taskToDelete) return;
 
     if (USER_ME.accessLevel === 'operador' && taskToDelete.assignee?.id !== USER_ME.id) {
@@ -1771,11 +1782,26 @@ export function TaskList() {
                                         
                                         {/* Edit Inline Button */}
                                         <button
+                                          type="button"
                                           onClick={() => setEditingSubtask({ mainTaskId: task.id, subtask: st })}
                                           title="Editar Tarefa Relacionada"
                                           className="p-2 hover:bg-surface-container rounded-xl text-primary hover:text-primary transition-all"
                                         >
                                           <Edit3 size={14} />
+                                        </button>
+                                        
+                                        {/* Delete Inline Button */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (window.confirm(`Tem certeza que deseja excluir a subtarefa "${st.title}"?`)) {
+                                              handleDeleteTask(st.id);
+                                            }
+                                          }}
+                                          title="Excluir Tarefa Relacionada"
+                                          className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl text-red-400 hover:text-red-500 transition-all"
+                                        >
+                                          <Trash2 size={14} />
                                         </button>
                                       </div>
                                     </div>
