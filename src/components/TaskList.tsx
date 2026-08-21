@@ -1427,6 +1427,7 @@ export function TaskList() {
                                    documentType: form.documentType || 'Ofício',
                                    assignee: TEAM.find(t => t.id === form.assigneeId) || USER_ME,
                                    progress: form.status === 'completed' ? 100 : form.status === 'in-progress' ? 50 : 0,
+                                   year: new Date().getFullYear().toString(),
                                    subtasks: [],
                                  };
 

@@ -130,9 +130,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           rootTasks.forEach(root => {
             root.subtasks = root.subtasks || [];
 
-            // 1. Auto-extract subtasks if sigadOfExp contains multiple values separated by /, ,, ;, \
-            if (root.sigadOfExp && (/[\/\,\;\\]/).test(root.sigadOfExp)) {
-              const parts = root.sigadOfExp.split(/[\/\,\;\\]+/).map(s => s.trim()).filter(Boolean);
+            // 1. Auto-extract subtasks if sigadOfExp contains multiple values separated by , or ;
+            if (root.sigadOfExp && (/[\,\;]/).test(root.sigadOfExp)) {
+              const parts = root.sigadOfExp.split(/[\,\;]+/).map(s => s.trim()).filter(Boolean);
               parts.forEach((pSigad) => {
                 const alreadyExists = root.subtasks?.some(st => 
                   st.sigadOfExp && st.sigadOfExp.toLowerCase() === pSigad.toLowerCase()
@@ -392,15 +392,38 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     runAutoBackup();
   }, [loading, tasks]);
 
-  const addTask = async (task: Task) => {
-    const validId = checkUUID(task.id) ? task.id : generateUUID();
-    const taskToAdd: Task = {
-      ...task,
-      id: validId
-    };
+  const addTask = async (task: Omit<Task, 'id'> | Task) => {
+    // Generate an ID if it's missing or invalid
+    const validId = ('id' in task && checkUUID(task.id)) ? task.id : generateUUID();
+    const taskToAdd: Task = { ...task, id: validId } as Task;
 
     // Optimistically update local React state
     setTasks(prev => {
+      if (taskToAdd.parentId) {
+        // Optimistically nest the subtask under its parent
+        const nestUnderParent = (tasksList: Task[]): Task[] => {
+          let found = false;
+          const updated = tasksList.map(t => {
+            if (t.id === taskToAdd.parentId) {
+              found = true;
+              return { ...t, subtasks: [...(t.subtasks || []), taskToAdd] };
+            }
+            if (t.subtasks && t.subtasks.length > 0) {
+              const nested = nestUnderParent(t.subtasks);
+              if (nested !== t.subtasks) {
+                found = true;
+                return { ...t, subtasks: nested };
+              }
+            }
+            return t;
+          });
+          return found ? updated : tasksList;
+        };
+        const nestedTasks = nestUnderParent(prev);
+        // If parent wasn't found (shouldn't happen), just return prev
+        return nestedTasks;
+      }
+      
       if (prev.some(t => t.id === validId)) return prev;
       return [taskToAdd, ...prev];
     });
