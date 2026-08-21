@@ -393,8 +393,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [loading, tasks]);
 
   const addTask = async (task: Omit<Task, 'id'> | Task) => {
-    // Generate an ID if it's missing or invalid
-    const validId = ('id' in task && checkUUID(task.id)) ? task.id : generateUUID();
+    // Keep existing ID or generate a new one
+    const validId = ('id' in task && task.id) ? task.id : generateUUID();
     const taskToAdd: Task = { ...task, id: validId } as Task;
 
     // Optimistically update local React state
