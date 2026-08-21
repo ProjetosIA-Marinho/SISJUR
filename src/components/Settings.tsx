@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { useData } from '../context/DataContext';
 import { supabase, mapUserToDb } from '../lib/supabase';
 import { CustomSelect } from './CustomSelect';
+import { saveToIndexedDB, getFromIndexedDB } from '../lib/indexedDb';
 
 const sectionOptions = [
   { value: 'AAJ', label: 'AAJ' },
@@ -75,14 +76,14 @@ export function Settings() {
   const [backupHistory, setBackupHistory] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    const loadHistory = () => {
-      const stored = localStorage.getItem('sisjur_backups_history');
-      if (stored) {
-        try {
-          setBackupHistory(JSON.parse(stored));
-        } catch (e) {
-          console.error(e);
+    const loadHistory = async () => {
+      try {
+        const stored = await getFromIndexedDB('sisjur_backups_history');
+        if (stored) {
+          setBackupHistory(stored);
         }
+      } catch (e) {
+        console.error(e);
       }
     };
     loadHistory();
@@ -722,7 +723,7 @@ export function Settings() {
                   </p>
                 </div>
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     const newBackup = {
                       id: `backup-manual-${Date.now()}`,
                       date: new Date().toISOString(),
@@ -731,7 +732,7 @@ export function Settings() {
                     };
                     const updated = [...backupHistory, newBackup].slice(-15);
                     setBackupHistory(updated);
-                    localStorage.setItem('sisjur_backups_history', JSON.stringify(updated));
+                    await saveToIndexedDB('sisjur_backups_history', updated);
                     
                     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasks, null, 2));
                     const downloadAnchor = document.createElement('a');
@@ -901,11 +902,11 @@ export function Settings() {
                               Restaurar
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 if (confirm('Deseja mesmo excluir esta cópia de backup do histórico local?')) {
                                   const updated = backupHistory.filter(item => item.id !== b.id);
                                   setBackupHistory(updated);
-                                  localStorage.setItem('sisjur_backups_history', JSON.stringify(updated));
+                                  await saveToIndexedDB('sisjur_backups_history', updated);
                                 }
                               }}
                               className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-xl transition-all cursor-pointer"

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, mapTaskFromDb, mapTaskToDb, mapUserFromDb, mapUserToDb, checkUUID } from '../lib/supabase';
+import { saveToIndexedDB, getFromIndexedDB } from '../lib/indexedDb';
 import { Task, User, Project } from '../types';
 import { TEAM as mockTeam, TASKS as mockTasks, PROJECTS as mockProjects, USER_ME } from '../data';
 import { generateUUID } from '../lib/utils';
@@ -349,42 +350,46 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || tasks.length === 0 || USER_ME.accessLevel !== 'gestor') return;
 
-    try {
-      const frequency = localStorage.getItem('sisjur_backup_frequency') || 'semanal';
-      if (frequency === 'desativado') return;
+    const runAutoBackup = async () => {
+      try {
+        const frequency = localStorage.getItem('sisjur_backup_frequency') || 'semanal';
+        if (frequency === 'desativado') return;
 
-      const storedHistory = localStorage.getItem('sisjur_backups_history');
-      const history = storedHistory ? JSON.parse(storedHistory) : [];
+        const storedHistory = await getFromIndexedDB('sisjur_backups_history');
+        const history = storedHistory || [];
 
-      const autoBackups = history.filter((h: any) => h.type === frequency);
-      const lastBackup = autoBackups.length > 0 
-        ? new Date(autoBackups[autoBackups.length - 1].date).getTime() 
-        : 0;
+        const autoBackups = history.filter((h: any) => h.type === frequency);
+        const lastBackup = autoBackups.length > 0 
+          ? new Date(autoBackups[autoBackups.length - 1].date).getTime() 
+          : 0;
 
-      const now = Date.now();
-      let shouldBackup = false;
+        const now = Date.now();
+        let shouldBackup = false;
 
-      if (frequency === 'semanal' && now - lastBackup > 7 * 24 * 60 * 60 * 1000) {
-        shouldBackup = true;
-      } else if (frequency === 'mensal' && now - lastBackup > 30 * 24 * 60 * 60 * 1000) {
-        shouldBackup = true;
-      } else if (frequency === 'semestral' && now - lastBackup > 180 * 24 * 60 * 60 * 1000) {
-        shouldBackup = true;
+        if (frequency === 'semanal' && now - lastBackup > 7 * 24 * 60 * 60 * 1000) {
+          shouldBackup = true;
+        } else if (frequency === 'mensal' && now - lastBackup > 30 * 24 * 60 * 60 * 1000) {
+          shouldBackup = true;
+        } else if (frequency === 'semestral' && now - lastBackup > 180 * 24 * 60 * 60 * 1000) {
+          shouldBackup = true;
+        }
+
+        if (shouldBackup) {
+          const newBackup = {
+            id: `backup-auto-${Date.now()}`,
+            date: new Date().toISOString(),
+            type: frequency,
+            tasks: tasks
+          };
+          const updatedHistory = [...history, newBackup].slice(-15);
+          await saveToIndexedDB('sisjur_backups_history', updatedHistory);
+        }
+      } catch (e) {
+        console.error('Error running auto backup:', e);
       }
-
-      if (shouldBackup) {
-        const newBackup = {
-          id: `backup-auto-${Date.now()}`,
-          date: new Date().toISOString(),
-          type: frequency,
-          tasks: tasks
-        };
-        const updatedHistory = [...history, newBackup].slice(-15);
-        localStorage.setItem('sisjur_backups_history', JSON.stringify(updatedHistory));
-      }
-    } catch (e) {
-      console.error('Error running auto backup:', e);
-    }
+    };
+    
+    runAutoBackup();
   }, [loading, tasks]);
 
   const addTask = async (task: Task) => {
@@ -473,9 +478,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setLocalData('sisjur_tasks', updatedTasks);
 
     try {
-      const storedHistory = localStorage.getItem('sisjur_backups_history');
-      if (storedHistory) {
-        const history = JSON.parse(storedHistory);
+      const history = await getFromIndexedDB('sisjur_backups_history');
+      if (history) {
         const updatedHistory = history.map((b: any) => {
           if (Array.isArray(b.tasks)) {
             return {
@@ -489,7 +493,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           }
           return b;
         });
-        localStorage.setItem('sisjur_backups_history', JSON.stringify(updatedHistory));
+        await saveToIndexedDB('sisjur_backups_history', updatedHistory);
       }
     } catch (e) {
       console.error('Error updating backup history on delete:', e);
