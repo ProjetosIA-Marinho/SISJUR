@@ -127,8 +127,12 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
     observations: '',
   });
 
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setErrorMessage(null);
     onSave(formData);
   };
@@ -699,10 +703,14 @@ export function TaskForm({ onClose, onSave, initialTask }: TaskFormProps) {
           </button>
           <button 
             type="submit"
-            className="flex-1 py-5 rounded-3xl bg-primary text-on-primary font-bold shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className={cn(
+              "flex-1 py-5 rounded-3xl bg-primary text-on-primary font-bold shadow-2xl shadow-primary/20 transition-all flex items-center justify-center gap-2",
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
+            )}
           >
             <Save size={20} />
-            Salvar Registro
+            {isSubmitting ? 'Salvando...' : 'Salvar Registro'}
           </button>
         </div>
       </form>
