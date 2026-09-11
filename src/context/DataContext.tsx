@@ -448,7 +448,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       localTasks.push(taskToAdd);
       setLocalData('sisjur_tasks', localTasks);
     }
-    await refreshAll();
   };
 
   const updateTask = async (task: Task) => {
@@ -480,7 +479,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const localTasks = getLocalData<Task[]>('sisjur_tasks', mockTasks);
     const updatedTasks = localTasks.map(t => t.id === task.id ? { ...t, ...task } : t);
     setLocalData('sisjur_tasks', updatedTasks);
-    await refreshAll();
   };
 
   const deleteTask = async (id: string) => {
@@ -540,8 +538,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Error updating backup history on delete:', e);
     }
-
-    await refreshAll();
   };
 
   const updateUser = async (user: User) => {
@@ -562,8 +558,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           .then(({ error }) => {
             if (error) {
               console.error('Error updating user in Supabase:', error);
-            } else {
-              refreshAll();
             }
           });
       } catch (e) {
@@ -590,7 +584,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         console.error('Supabase connection failed during user deletion:', err);
       }
     }
-    await refreshAll();
   };
 
   const activeTeam = React.useMemo(() => {
@@ -641,7 +634,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     setLocalData('sisjur_tasks', newTasks);
-    await refreshAll();
   };
 
   return (

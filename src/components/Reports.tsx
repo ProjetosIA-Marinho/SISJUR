@@ -18,7 +18,7 @@ export function Reports() {
   const [accessFilter, setAccessFilter] = React.useState<'todos' | 'admin' | 'militar'>('todos');
   const [statusFilter, setStatusFilter] = React.useState<'todos' | 'ativos' | 'ausentes'>('todos');
 
-  const { tasks: TASKS, team: TEAM, refreshAll, deleteUser } = useData();
+  const { tasks: TASKS, team: TEAM, refreshAll, deleteUser, updateUser } = useData();
 
   // Stateful team array to support toggling user profile active status
   const [localTeam, setLocalTeam] = React.useState<User[]>([]);
@@ -84,9 +84,7 @@ export function Reports() {
       return;
     }
 
-    supabase.from('profiles').update({ online: !member.online }).eq('id', memberId).then(() => {
-      refreshAll();
-    });
+    updateUser({ ...member, online: !member.online });
   };
 
   const openAddUserModal = () => {
