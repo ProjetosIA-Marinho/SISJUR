@@ -46,10 +46,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // Cache the ongoing refresh promise to prevent concurrent duplicate API calls
+  const refreshPromiseRef = React.useRef<Promise<void> | null>(null);
 
   const refreshAll = async () => {
-    setLoading(true);
-    let success = false;
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+
+    const doRefresh = async () => {
+      setLoading(true);
+      let success = false;
 
     if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
       try {
@@ -60,6 +68,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         
         if (usersError) throw usersError;
         const mappedUsers = (usersData || []).map(mapUserFromDb);
+        const usersById = new Map((usersData || []).map(u => [u.id, u]));
 
         // Fetch Tasks referencing profiles as users alias (with pagination to bypass 1000-row limit)
         let allTasksData: any[] = [];
@@ -70,13 +79,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         while (hasMore) {
           const { data: chunk, error: tasksError } = await supabase
             .from('tasks')
-            .select('*, users:profiles!assignee_id(*)')
+            .select('*') // Removed heavy join to save egress: '*, users:profiles!assignee_id(*)'
             .range(start, start + limit - 1);
           
           if (tasksError) throw tasksError;
 
           if (chunk && chunk.length > 0) {
-            allTasksData = [...allTasksData, ...chunk];
+            // Manually populate 'users' to keep mapTaskFromDb working without the heavy join
+            const chunkWithUsers = chunk.map(task => ({
+              ...task,
+              users: task.assignee_id ? usersById.get(task.assignee_id) : null
+            }));
+            allTasksData = [...allTasksData, ...chunkWithUsers];
             start += limit;
             if (chunk.length < limit) {
               hasMore = false;
@@ -250,6 +264,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   };
+
+  refreshPromiseRef.current = doRefresh().finally(() => {
+    refreshPromiseRef.current = null;
+  });
+
+  return refreshPromiseRef.current;
+};
 
   const currentUserRef = React.useRef(currentUser);
   useEffect(() => {

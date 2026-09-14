@@ -56,7 +56,6 @@ export default function App() {
           if (data) {
             updateActiveUser(mapUserFromDb(data));
             setIsAuthenticated(true);
-            refreshAll();
           }
         } catch (err) {
           console.error('Error fetching profile on auth change:', err);
@@ -64,7 +63,6 @@ export default function App() {
       } else {
         updateActiveUser(null);
         setIsAuthenticated(false);
-        refreshAll();
       }
       setLoadingSession(false);
     });
